@@ -1,6 +1,7 @@
 const CACHE = 'fenhao-student-tools-v1'
+const BASE = '/fenhao-student-tools/'
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(['/','/manifest.webmanifest'])))
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([BASE, `${BASE}manifest.webmanifest`])))
 })
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
