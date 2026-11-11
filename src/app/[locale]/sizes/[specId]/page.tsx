@@ -1,0 +1,658 @@
+import type { Metadata } from 'next'
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
+import { hasLocale } from 'next-intl'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { notFound } from 'next/navigation'
+
+import { Breadcrumb } from '@/components/breadcrumb'
+import { CrossSurfaceLinks } from '@/components/cross-surface-links'
+import { JsonLd } from '@/components/jsonld'
+import { RegionFlag } from '@/components/region-flag'
+import { SiteFooter } from '@/components/site-footer'
+import { SiteHeader } from '@/components/site-header'
+import { BUILTIN_PHOTO_SPECS, getPhotoSpec } from '@/data/photo-specs'
+import { getRelatedSpecs } from '@/features/seo/related-specs'
+import { flagCodeForRegion } from '@/features/seo/spec-region'
+import { Link } from '@/i18n/navigation'
+import type { Locale } from '@/i18n/routing'
+import { routing } from '@/i18n/routing'
+import { localizeText } from '@/lib/i18n-text'
+import { breadcrumbItemsToJsonLd, getBreadcrumbItems } from '@/lib/seo/breadcrumbs'
+import { faqSchema, howToSchema, webApplicationSchema } from '@/lib/seo/jsonld'
+import { buildMetadata } from '@/lib/seo/metadata'
+import { INDEX_LOCALES, isIndexedLocale } from '@/lib/seo/site-config'
+import type { PhotoCategory, PhotoSpec } from '@/types/spec'
+
+interface SpecDetailPageProps {
+  params: Promise<{ locale: string; specId: string }>
+}
+
+const REGION_NAME: Record<string, { zh: string; 'zh-Hant': string; en: string }> = {
+  CN: { zh: '中国', 'zh-Hant': '中國', en: 'China' },
+  US: { zh: '美国', 'zh-Hant': '美國', en: 'the United States' },
+  EU: { zh: '欧洲申根区', 'zh-Hant': '歐洲申根區', en: 'the Schengen Area' },
+  GB: { zh: '英国', 'zh-Hant': '英國', en: 'the United Kingdom' },
+  CA: { zh: '加拿大', 'zh-Hant': '加拿大', en: 'Canada' },
+  AU: { zh: '澳大利亚', 'zh-Hant': '澳洲', en: 'Australia' },
+  NZ: { zh: '新西兰', 'zh-Hant': '紐西蘭', en: 'New Zealand' },
+  JP: { zh: '日本', 'zh-Hant': '日本', en: 'Japan' },
+  KR: { zh: '韩国', 'zh-Hant': '韓國', en: 'Korea' },
+  SG: { zh: '新加坡', 'zh-Hant': '新加坡', en: 'Singapore' },
+  MY: { zh: '马来西亚', 'zh-Hant': '馬來西亞', en: 'Malaysia' },
+  VN: { zh: '越南', 'zh-Hant': '越南', en: 'Vietnam' },
+  TH: { zh: '泰国', 'zh-Hant': '泰國', en: 'Thailand' },
+  RU: { zh: '俄罗斯', 'zh-Hant': '俄羅斯', en: 'Russia' },
+  IN: { zh: '印度', 'zh-Hant': '印度', en: 'India' },
+}
+
+function regionDisplayName(region: string | undefined, locale: Locale): string {
+  if (!region) return ''
+  const entry = REGION_NAME[region.toUpperCase()]
+  if (!entry) return region
+  return locale === 'zh-Hans' ? entry.zh : locale === 'zh-Hant' ? entry['zh-Hant'] : entry.en
+}
+
+interface BackgroundLabel {
+  hex: string | null
+  label: string
+}
+
+/** Trilingual label payload — `en` is the fallback for the other 10 locales. */
+interface TriLabel {
+  zh: string
+  'zh-Hant': string
+  en: string
+}
+
+/** Pick the locale-appropriate string from a {@link TriLabel}. */
+function tri(label: TriLabel, locale: Locale): string {
+  return locale === 'zh-Hans' ? label.zh : locale === 'zh-Hant' ? label['zh-Hant'] : label.en
+}
+
+/** Known background hex → human label. Shared by recommended + allowed colours. */
+const BG_LABELS: Record<string, TriLabel> = {
+  '#FFFFFF': { zh: '标准白底', 'zh-Hant': '標準白底', en: 'standard white' },
+  '#DCDCDC': { zh: '浅灰底', 'zh-Hant': '淺灰底', en: 'light grey' },
+  '#438EDB': { zh: '证件蓝', 'zh-Hant': '證件藍', en: 'visa blue' },
+  '#D9342B': { zh: '证件红', 'zh-Hant': '證件紅', en: 'ID red' },
+}
+
+/** Resolve any background hex to `{ hex, label }`, falling back to the raw hex. */
+function bgLabelFor(hex: string, locale: Locale): BackgroundLabel {
+  const normalised = hex.toUpperCase()
+  const entry = BG_LABELS[normalised]
+  return { hex: normalised, label: entry ? tri(entry, locale) : normalised }
+}
+
+function backgroundLabel(spec: PhotoSpec, locale: Locale): BackgroundLabel {
+  const hex = spec.background?.recommended ?? null
+  if (!hex) {
+    return {
+      hex: null,
+      label: locale === 'en' ? 'transparent' : '透明',
+    }
+  }
+  return bgLabelFor(hex, locale)
+}
+
+/** Labels for the extra spec attributes surfaced in P2 (E-E-A-T depth). */
+const SPEC_FIELD_LABELS = {
+  headHeight: { zh: '头部高度占比', 'zh-Hant': '頭部高度佔比', en: 'Head height' },
+  eyeLine: { zh: '眼睛位置（距顶部）', 'zh-Hant': '眼睛位置（距頂部）', en: 'Eye line (from top)' },
+  formats: { zh: '可接受格式', 'zh-Hant': '可接受格式', en: 'Accepted formats' },
+  otherBackgrounds: {
+    zh: '其他可接受底色',
+    'zh-Hant': '其他可接受底色',
+    en: 'Other accepted backgrounds',
+  },
+  officialSource: { zh: '官方依据', 'zh-Hant': '官方依據', en: 'Official source' },
+} as const satisfies Record<string, TriLabel>
+
+/** Format a `[0.5, 0.69]` ratio tuple as a `50%–69%` percentage range. */
+function formatRatioRange(range: readonly [number, number] | undefined): string | null {
+  if (!range) return null
+  const pct = (n: number) => `${Math.round(n * 100)}%`
+  return `${pct(range[0])}–${pct(range[1])}`
+}
+
+/**
+ * Alternate accepted background colours beyond the recommended one,
+ * upper-cased + deduped + with the recommended colour removed.
+ */
+function otherBackgroundColors(spec: PhotoSpec): string[] {
+  const recommended = spec.background?.recommended?.toUpperCase()
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const raw of spec.background?.allowed ?? []) {
+    const hex = raw.toUpperCase()
+    if (hex === recommended || seen.has(hex)) continue
+    seen.add(hex)
+    out.push(hex)
+  }
+  return out
+}
+
+function formatFileRuleRange(minKB?: number, maxKB?: number): string | null {
+  if (minKB != null && maxKB != null) return `${minKB}–${maxKB} KB`
+  if (maxKB != null) return `≤ ${maxKB} KB`
+  if (minKB != null) return `≥ ${minKB} KB`
+  return null
+}
+
+/**
+ * Lock the route to the predefined (locale × specId) matrix.
+ * Without this, requests for unknown spec ids (typos, stale external
+ * links, GSC ghost URLs) bypass `generateStaticParams` and hit the
+ * App Router's runtime fallback — which on Vercel surfaces as a
+ * **500** instead of a clean 404 because the Edge response chain
+ * around `notFound()` short-circuits before the locale-aware
+ * `not-found.tsx` can render. Pinning `dynamicParams = false` makes
+ * Next.js itself return a framework 404 for any param tuple not in
+ * the matrix, so Google never sees server errors for typoed slugs.
+ *
+ * Tested against `/en/sizes/totally-fake-xyz` → was 500, now 404.
+ */
+export const dynamicParams = false
+
+export function generateStaticParams() {
+  const params: Array<{ locale: string; specId: string }> = []
+  for (const locale of routing.locales) {
+    for (const spec of BUILTIN_PHOTO_SPECS) {
+      params.push({ locale, specId: spec.id })
+    }
+  }
+  return params
+}
+
+export async function generateMetadata({ params }: SpecDetailPageProps): Promise<Metadata> {
+  const { locale, specId } = await params
+  if (!hasLocale(routing.locales, locale)) return {}
+  const spec = getPhotoSpec(specId)
+  if (!spec) return {}
+  const t = await getTranslations({ locale, namespace: 'Sizes.detail' })
+  const tSizes = await getTranslations({ locale, namespace: 'Sizes' })
+  const name = localizeText(spec.name, locale)
+  const bg = backgroundLabel(spec, locale as Locale)
+  // Front-load the spec name into the keyword cluster so the per-doc
+  // page ranks for its long-tail (e.g. "US visa photo size") while
+  // still carrying the AI / intelligent intent inherited from the
+  // parent /sizes hub.
+  const baseKeywords = tSizes.raw('metaKeywords') as string[]
+  const keywords = [name, ...baseKeywords]
+  return buildMetadata({
+    locale: locale as Locale,
+    path: `/sizes/${spec.id}`,
+    title: t('metaTitle', {
+      name,
+      w: spec.width_mm,
+      h: spec.height_mm,
+    }),
+    description: t('metaDescription', {
+      name,
+      w: spec.width_mm,
+      h: spec.height_mm,
+      wpx: spec.width_px ?? '—',
+      hpx: spec.height_px ?? '—',
+      dpi: spec.dpi,
+      bgLabel: bg.label,
+    }),
+    keywords,
+    // Long-tail detail tier: only zh-Hans + en are indexed while the
+    // domain is young (see INDEX_LOCALES). Other locales still render
+    // for visitors but are noindex + excluded from the hreflang set.
+    noIndex: !isIndexedLocale(locale as Locale),
+    alternateLocales: INDEX_LOCALES,
+  })
+}
+
+const HOWTO_STEP_KEYS = ['upload', 'cutout', 'crop', 'export'] as const
+const FAQ_ITEM_KEYS = ['free', 'upload', 'background', 'accuracy', 'phone'] as const
+
+export default async function SpecDetailPage({ params }: SpecDetailPageProps) {
+  const { locale, specId } = await params
+  if (!hasLocale(routing.locales, locale)) notFound()
+  const spec = getPhotoSpec(specId)
+  if (!spec) notFound()
+  setRequestLocale(locale)
+
+  const t = await getTranslations({ locale, namespace: 'Sizes.detail' })
+  const tSizes = await getTranslations({ locale, namespace: 'Sizes' })
+  const tNav = await getTranslations({ locale, namespace: 'Nav' })
+
+  const name = localizeText(spec.name, locale)
+  const bg = backgroundLabel(spec, locale as Locale)
+  const regionName = regionDisplayName(spec.region, locale as Locale)
+  const fileRulesRange = formatFileRuleRange(spec.fileRules?.minKB, spec.fileRules?.maxKB)
+  const flag = flagCodeForRegion(spec.region)
+  // Surface the spec's composition + format + alternate-background +
+  // official-source data (carried in the catalog but never rendered)
+  // so each /sizes/[id] page ships genuinely unique, verifiable facts
+  // instead of the same templated prose — the thin-content risk flagged
+  // in the SEO review.
+  const headHeight = formatRatioRange(spec.composition?.headHeightRatio)
+  const eyeLine = formatRatioRange(spec.composition?.eyeLineFromTop)
+  const formats = spec.fileRules?.formats?.map((f) => f.toUpperCase()).join(' / ') ?? null
+  const otherBackgrounds = otherBackgroundColors(spec).map((hex) =>
+    bgLabelFor(hex, locale as Locale),
+  )
+  const officialHost = spec.reference ? new URL(spec.reference).host.replace(/^www\./, '') : null
+
+  const breadcrumbItems = getBreadcrumbItems('sizes-detail', {
+    labels: { home: tNav('home'), sizes: tSizes('heading') },
+    detail: { itemName: name, itemSlug: spec.id },
+  })
+  const breadcrumbs = breadcrumbItemsToJsonLd(breadcrumbItems, locale as Locale)
+
+  const howToSteps = HOWTO_STEP_KEYS.map((key) => ({
+    name: t(`howto.steps.${key}.name`, { name }),
+    text: t(`howto.steps.${key}.text`, {
+      name,
+      w: spec.width_mm,
+      h: spec.height_mm,
+      bgLabel: bg.label,
+    }),
+  }))
+
+  const howTo = howToSchema({
+    name: t('howto.title', { name }),
+    description: t('howto.subtitle'),
+    totalTimeISO: 'PT2M',
+    steps: howToSteps,
+  })
+
+  const faqEntries = FAQ_ITEM_KEYS.map((key) => ({
+    question: t(`faq.items.${key}.q`, { name }),
+    answer: t(`faq.items.${key}.a`, { name, bgLabel: bg.label }),
+  }))
+  const faq = faqSchema(faqEntries)
+
+  const purposeKey = `purpose.${spec.category as PhotoCategory}` as const
+  const purposeBody =
+    spec.category === 'custom'
+      ? null
+      : t(purposeKey, {
+          name,
+          regionName: regionName || (locale === 'en' ? 'the destination country' : '目标国家'),
+        })
+
+  return (
+    <>
+      <SiteHeader />
+      <main className="flex-1">
+        <article className="mx-auto w-full max-w-4xl px-6 pt-10 pb-16">
+          <Breadcrumb items={breadcrumbItems} className="mb-6" />
+
+          <nav className="mb-6">
+            <Link
+              href={{ pathname: '/sizes' }}
+              className="inline-flex items-center gap-1 text-sm text-[var(--color-text-mute)] hover:text-[var(--color-text)]"
+            >
+              <ArrowLeft className="size-4" aria-hidden="true" />
+              {t('backLink')}
+            </Link>
+          </nav>
+
+          <header className="mb-10">
+            <div className="flex items-center gap-3">
+              {flag ? (
+                <RegionFlag
+                  countryCode={flag}
+                  label={spec.region ?? ''}
+                  squared
+                  className="size-7"
+                />
+              ) : null}
+              <span className="font-mono text-xs tracking-[0.25em] text-[var(--color-primary-dk)] uppercase">
+                {spec.id}
+              </span>
+            </div>
+            <h1
+              className="mt-3 font-semibold tracking-tight text-balance text-[var(--color-text)]"
+              style={{
+                fontSize: 'var(--text-display-2)',
+                lineHeight: 'var(--text-display-2--line-height)',
+              }}
+            >
+              {t('heading', { name })}
+            </h1>
+            <p className="mt-3 font-mono text-sm text-[var(--color-text-weak)]">
+              {t('tagline', {
+                w: spec.width_mm,
+                h: spec.height_mm,
+                wpx: spec.width_px ?? '—',
+                hpx: spec.height_px ?? '—',
+                dpi: spec.dpi,
+              })}
+            </p>
+            <p className="mt-5 text-[var(--color-text-mute)] text-[var(--text-body-lg)]">
+              {t('intro', {
+                name,
+                w: spec.width_mm,
+                h: spec.height_mm,
+                wpx: spec.width_px ?? '—',
+                hpx: spec.height_px ?? '—',
+                dpi: spec.dpi,
+                bgLabel: bg.label,
+              })}
+            </p>
+          </header>
+
+          <section
+            className="mb-12 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6"
+            aria-labelledby="spec-section"
+          >
+            <h2
+              id="spec-section"
+              className="mb-4 text-[var(--color-text)]"
+              style={{
+                fontSize: 'var(--text-h3)',
+                lineHeight: 'var(--text-h3--line-height)',
+              }}
+            >
+              {t('specSection.title')}
+            </h2>
+            <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+              <div>
+                <dt className="text-xs text-[var(--color-text-weak)]">
+                  {t('specSection.dimensions')}
+                </dt>
+                <dd className="mt-1 text-[var(--color-text)]">
+                  {spec.width_mm} × {spec.height_mm} mm
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[var(--color-text-weak)]">{t('specSection.pixels')}</dt>
+                <dd className="mt-1 font-mono text-[var(--color-text)]">
+                  {spec.width_px ?? '—'} × {spec.height_px ?? '—'} px
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[var(--color-text-weak)]">{t('specSection.dpi')}</dt>
+                <dd className="mt-1 font-mono text-[var(--color-text)]">{spec.dpi}</dd>
+              </div>
+              {bg.hex ? (
+                <div>
+                  <dt className="text-xs text-[var(--color-text-weak)]">
+                    {t('specSection.background')}
+                  </dt>
+                  <dd className="mt-1 flex items-center gap-2 text-[var(--color-text)]">
+                    <span
+                      aria-hidden="true"
+                      className="inline-block size-4 rounded-sm border border-[var(--color-border)]"
+                      style={{ backgroundColor: bg.hex }}
+                    />
+                    <span>{bg.label}</span>
+                    <span className="font-mono text-xs text-[var(--color-text-weak)]">
+                      {bg.hex}
+                    </span>
+                  </dd>
+                </div>
+              ) : null}
+              {fileRulesRange ? (
+                <div>
+                  <dt className="text-xs text-[var(--color-text-weak)]">
+                    {t('specSection.fileSize')}
+                  </dt>
+                  <dd className="mt-1 text-[var(--color-text)]">{fileRulesRange}</dd>
+                </div>
+              ) : null}
+              {regionName ? (
+                <div>
+                  <dt className="text-xs text-[var(--color-text-weak)]">
+                    {t('specSection.region')}
+                  </dt>
+                  <dd className="mt-1 text-[var(--color-text)]">{regionName}</dd>
+                </div>
+              ) : null}
+              {headHeight ? (
+                <div>
+                  <dt className="text-xs text-[var(--color-text-weak)]">
+                    {tri(SPEC_FIELD_LABELS.headHeight, locale as Locale)}
+                  </dt>
+                  <dd className="mt-1 font-mono text-[var(--color-text)]">{headHeight}</dd>
+                </div>
+              ) : null}
+              {eyeLine ? (
+                <div>
+                  <dt className="text-xs text-[var(--color-text-weak)]">
+                    {tri(SPEC_FIELD_LABELS.eyeLine, locale as Locale)}
+                  </dt>
+                  <dd className="mt-1 font-mono text-[var(--color-text)]">{eyeLine}</dd>
+                </div>
+              ) : null}
+              {formats ? (
+                <div>
+                  <dt className="text-xs text-[var(--color-text-weak)]">
+                    {tri(SPEC_FIELD_LABELS.formats, locale as Locale)}
+                  </dt>
+                  <dd className="mt-1 font-mono text-[var(--color-text)]">{formats}</dd>
+                </div>
+              ) : null}
+              {otherBackgrounds.length > 0 ? (
+                <div>
+                  <dt className="text-xs text-[var(--color-text-weak)]">
+                    {tri(SPEC_FIELD_LABELS.otherBackgrounds, locale as Locale)}
+                  </dt>
+                  <dd className="mt-1 flex flex-wrap items-center gap-2 text-[var(--color-text)]">
+                    {otherBackgrounds.map((b) => (
+                      <span key={b.hex} className="inline-flex items-center gap-1.5">
+                        <span
+                          aria-hidden="true"
+                          className="inline-block size-4 rounded-sm border border-[var(--color-border)]"
+                          style={{ backgroundColor: b.hex ?? undefined }}
+                        />
+                        <span className="text-sm">{b.label}</span>
+                      </span>
+                    ))}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+            {spec.reference && officialHost ? (
+              <p className="mt-6 border-t border-[var(--color-border)] pt-4 text-xs text-[var(--color-text-weak)]">
+                {tri(SPEC_FIELD_LABELS.officialSource, locale as Locale)}:{' '}
+                <a
+                  href={spec.reference}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-[var(--color-primary-dk)] underline-offset-2 hover:underline"
+                >
+                  {officialHost}
+                </a>
+              </p>
+            ) : null}
+          </section>
+
+          {purposeBody ? (
+            <section className="mb-12" aria-labelledby="purpose-section">
+              <h2
+                id="purpose-section"
+                className="mb-3 text-[var(--color-text)]"
+                style={{
+                  fontSize: 'var(--text-h3)',
+                  lineHeight: 'var(--text-h3--line-height)',
+                }}
+              >
+                {t('purpose.title')}
+              </h2>
+              <p className="leading-relaxed text-[var(--color-text-mute)]">{purposeBody}</p>
+            </section>
+          ) : null}
+
+          <section className="mb-12" aria-labelledby="requirements-section">
+            <h2
+              id="requirements-section"
+              className="mb-3 text-[var(--color-text)]"
+              style={{
+                fontSize: 'var(--text-h3)',
+                lineHeight: 'var(--text-h3--line-height)',
+              }}
+            >
+              {t('requirements.title')}
+            </h2>
+            <p className="leading-relaxed text-[var(--color-text-mute)]">
+              {t('requirements.body', { bgLabel: bg.label })}
+            </p>
+            {fileRulesRange ? (
+              <p className="mt-3 text-sm text-[var(--color-text-mute)]">
+                {t('requirements.fileRules', { range: fileRulesRange })}
+              </p>
+            ) : null}
+          </section>
+
+          <section className="mb-12" aria-labelledby="howto-section">
+            <h2
+              id="howto-section"
+              className="mb-2 text-[var(--color-text)]"
+              style={{
+                fontSize: 'var(--text-h3)',
+                lineHeight: 'var(--text-h3--line-height)',
+              }}
+            >
+              {t('howto.title', { name })}
+            </h2>
+            <p className="mb-6 text-sm text-[var(--color-text-mute)]">{t('howto.subtitle')}</p>
+            <ol className="space-y-4">
+              {howToSteps.map((step, idx) => (
+                <li
+                  key={HOWTO_STEP_KEYS[idx]}
+                  className="flex items-start gap-4 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+                >
+                  <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-soft)] font-mono text-sm font-semibold text-[var(--color-primary-dk)]">
+                    {idx + 1}
+                  </span>
+                  <div>
+                    <h3 className="font-medium text-[var(--color-text)]">{step.name}</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-mute)]">
+                      {step.text}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section className="mb-12" aria-labelledby="faq-section">
+            <h2
+              id="faq-section"
+              className="mb-4 text-[var(--color-text)]"
+              style={{
+                fontSize: 'var(--text-h3)',
+                lineHeight: 'var(--text-h3--line-height)',
+              }}
+            >
+              {t('faq.title', { name })}
+            </h2>
+            <div className="space-y-4">
+              {faqEntries.map((entry, idx) => (
+                <details
+                  key={FAQ_ITEM_KEYS[idx]}
+                  className="group rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 open:shadow-[var(--shadow-sm)]"
+                >
+                  <summary className="cursor-pointer list-none text-sm font-medium text-[var(--color-text)] marker:hidden">
+                    {entry.question}
+                  </summary>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-mute)]">
+                    {entry.answer}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-[var(--radius-lg)] border border-[var(--color-primary-soft)] bg-[var(--color-primary-soft)] p-6">
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="inline-flex items-center gap-2 font-medium text-[var(--color-primary-dk)]">
+                <Check className="size-4 shrink-0" aria-hidden="true" />
+                {name}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href={{
+                    pathname: '/studio',
+                    query: { tab: 'size', spec: spec.id },
+                  }}
+                  className="inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-primary)] px-5 py-2.5 text-sm font-medium text-white shadow-[var(--shadow-sm)] hover:bg-[var(--color-primary-dk)]"
+                >
+                  {t('cta.primary', { name })}
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+                <Link
+                  href={{ pathname: '/sizes' }}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-[var(--color-primary-dk)] hover:text-[var(--color-primary)]"
+                >
+                  {t('cta.secondary')}
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          <RelatedSpecsRow specId={spec.id} locale={locale as Locale} t={t} />
+          <CrossSurfaceLinks current="sizes" />
+        </article>
+      </main>
+      <SiteFooter />
+      <JsonLd data={[webApplicationSchema(locale as Locale), breadcrumbs, howTo, faq]} />
+    </>
+  )
+}
+
+interface RelatedSpecsRowProps {
+  specId: string
+  locale: Locale
+  t: Awaited<ReturnType<typeof getTranslations<'Sizes.detail'>>>
+}
+
+/**
+ * "Also try / 你可能还需要" row beneath the per-spec CTA. Renders
+ * 4–6 related specs picked deterministically by `getRelatedSpecs`
+ * (same region first, then same physical size bucket). The row is
+ * a `<nav aria-label>` so screen readers can skip into the
+ * recommendations directly.
+ */
+function RelatedSpecsRow({ specId, locale, t }: RelatedSpecsRowProps) {
+  const related = getRelatedSpecs(specId)
+  if (related.length === 0) return null
+  return (
+    <nav
+      aria-label={t('related.heading')}
+      className="mt-12 border-t border-[var(--color-border)] pt-10"
+    >
+      <header className="mb-6">
+        <h2
+          className="text-[var(--color-text)]"
+          style={{
+            fontSize: 'var(--text-h3)',
+            lineHeight: 'var(--text-h3--line-height)',
+          }}
+        >
+          {t('related.heading')}
+        </h2>
+        <p className="mt-1 text-sm text-[var(--color-text-mute)]">{t('related.subtitle')}</p>
+      </header>
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {related.map((other) => (
+          <li key={other.id}>
+            <Link
+              href={{ pathname: `/sizes/${other.id}` }}
+              className="group flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition-colors hover:border-[var(--color-primary-soft)] hover:bg-[var(--color-primary-soft)]/30"
+            >
+              <span className="flex-1">
+                <span className="block text-sm font-medium text-[var(--color-text)]">
+                  {localizeText(other.name, locale)}
+                </span>
+                <span className="mt-0.5 block font-mono text-xs text-[var(--color-text-weak)]">
+                  {other.width_mm} × {other.height_mm} mm
+                </span>
+              </span>
+              <ArrowRight
+                className="size-4 text-[var(--color-text-weak)] transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+              />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
