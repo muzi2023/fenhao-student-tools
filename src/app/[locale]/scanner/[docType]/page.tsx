@@ -1,0 +1,380 @@
+/**
+ * Scanner DocType detail page — one per built-in DocSpec.
+ *
+ * Each page is statically generated at build time (`generateStaticParams`)
+ * and SSR'd at request time; the workspace shell itself is *not*
+ * mounted here — these pages are intentionally crawl-friendly content
+ * landing pages that funnel users into `/scanner` with the right
+ * DocSpec preselected via the `spec` query param.
+ *
+ * SEO surface:
+ *   - `<title>` + meta description per DocType × locale
+ *   - hreflang × canonical wired through `buildMetadata`
+ *   - JSON-LD: WebApplication + BreadcrumbList + HowTo + FAQPage
+ *   - H2 sections: summary / usage / spec / how-to / FAQ
+ */
+
+import type { Metadata } from 'next'
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
+import { hasLocale } from 'next-intl'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { notFound } from 'next/navigation'
+
+import { Breadcrumb } from '@/components/breadcrumb'
+import { CrossSurfaceLinks } from '@/components/cross-surface-links'
+import { JsonLd } from '@/components/jsonld'
+import { SiteFooter } from '@/components/site-footer'
+import { SiteHeader } from '@/components/site-header'
+import { DOC_SPECS, getOutputPixels, type DocSpec } from '@/features/scanner/lib/doc-specs'
+import { getRelatedDocSpecs } from '@/features/seo/related-specs'
+import { Link } from '@/i18n/navigation'
+import type { Locale } from '@/i18n/routing'
+import { routing } from '@/i18n/routing'
+import { breadcrumbItemsToJsonLd, getBreadcrumbItems } from '@/lib/seo/breadcrumbs'
+import { faqSchema, howToSchema, webApplicationSchema } from '@/lib/seo/jsonld'
+import { buildMetadata } from '@/lib/seo/metadata'
+import { INDEX_LOCALES, isIndexedLocale } from '@/lib/seo/site-config'
+
+interface PageProps {
+  params: Promise<{ locale: string; docType: string }>
+}
+
+const HOWTO_STEP_KEYS = ['upload', 'detect', 'configure', 'export'] as const
+const FAQ_ITEM_KEYS = ['free', 'privacy', 'watermark', 'official'] as const
+
+function findDocSpec(id: string): DocSpec | null {
+  return DOC_SPECS.find((s) => s.id === id) ?? null
+}
+
+/**
+ * Lock the route to the predefined (locale × docType) matrix.
+ * See `src/app/[locale]/sizes/[specId]/page.tsx` for the full
+ * rationale — short version: unknown doc types must 404, not 500.
+ */
+export const dynamicParams = false
+
+export function generateStaticParams() {
+  const params: Array<{ locale: string; docType: string }> = []
+  for (const locale of routing.locales) {
+    for (const spec of DOC_SPECS) {
+      params.push({ locale, docType: spec.id })
+    }
+  }
+  return params
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale, docType } = await params
+  if (!hasLocale(routing.locales, locale)) return {}
+  const spec = findDocSpec(docType)
+  if (!spec) return {}
+  const t = await getTranslations({ locale, namespace: 'Scanner.detail' })
+  const tName = await getTranslations({ locale, namespace: 'Scanner.docSpecs' })
+  const tScanner = await getTranslations({ locale, namespace: 'Scanner' })
+  const name = tName(spec.id as Parameters<typeof tName>[0])
+  // Per-DocType pages inherit the parent /scanner intent cluster so
+  // long-tail queries like "中国身份证扫描" still attribute to the AI
+  // scanner brand keywords, then prepend the doc name to anchor the
+  // page-specific tail.
+  const baseKeywords = tScanner.raw('metaKeywords') as string[]
+  const keywords = [name, ...baseKeywords]
+  return buildMetadata({
+    locale: locale as Locale,
+    path: `/scanner/${spec.id}`,
+    title: t('metaTitle', { name, w: spec.widthMm, h: spec.heightMm }),
+    description: t('metaDescription', { name, w: spec.widthMm, h: spec.heightMm }),
+    keywords,
+    // See INDEX_LOCALES — detail tier indexed in zh-Hans + en only.
+    noIndex: !isIndexedLocale(locale as Locale),
+    alternateLocales: INDEX_LOCALES,
+  })
+}
+
+export default async function ScannerDocTypePage({ params }: PageProps) {
+  const { locale, docType } = await params
+  if (!hasLocale(routing.locales, locale)) notFound()
+  const spec = findDocSpec(docType)
+  if (!spec) notFound()
+  setRequestLocale(locale)
+
+  const t = await getTranslations({ locale, namespace: 'Scanner.detail' })
+  const tDocTypes = await getTranslations({ locale, namespace: 'Scanner.docTypes' })
+  const tNames = await getTranslations({ locale, namespace: 'Scanner.docSpecs' })
+  const tGroups = await getTranslations({ locale, namespace: 'Scanner.docSpecGroups' })
+  const tScanner = await getTranslations({ locale, namespace: 'Scanner' })
+  const tNav = await getTranslations({ locale, namespace: 'Nav' })
+
+  const name = tNames(spec.id as Parameters<typeof tNames>[0])
+  const groupLabel = tGroups(spec.group as Parameters<typeof tGroups>[0])
+  const summary = tDocTypes(`${spec.id}.summary` as Parameters<typeof tDocTypes>[0])
+  const usage = tDocTypes(`${spec.id}.usage` as Parameters<typeof tDocTypes>[0])
+  const { width: widthPx, height: heightPx } = getOutputPixels(spec)
+
+  const breadcrumbItems = getBreadcrumbItems('scanner-detail', {
+    labels: { home: tNav('home'), scanner: tScanner('title') },
+    detail: { itemName: name, itemSlug: spec.id },
+  })
+  const breadcrumbs = breadcrumbItemsToJsonLd(breadcrumbItems, locale as Locale)
+
+  const howToSteps = HOWTO_STEP_KEYS.map((key) => ({
+    name: t(`howTo.steps.${key}.name`, { name }),
+    text: t(`howTo.steps.${key}.text`, { name }),
+  }))
+
+  const howTo = howToSchema({
+    name: t('howTo.title', { name }),
+    description: t('howTo.subtitle'),
+    totalTimeISO: t('howTo.totalTimeIso'),
+    steps: howToSteps,
+  })
+
+  const faqEntries = FAQ_ITEM_KEYS.map((key) => ({
+    question: t(`faq.items.${key}.q`, { name }),
+    answer: t(`faq.items.${key}.a`, { name }),
+  }))
+  const faq = faqSchema(faqEntries)
+
+  return (
+    <>
+      <SiteHeader />
+      <main className="flex-1">
+        <article className="mx-auto w-full max-w-4xl px-6 pt-10 pb-16">
+          <Breadcrumb items={breadcrumbItems} className="mb-6" />
+
+          <nav className="mb-6">
+            <Link
+              href={{ pathname: '/scanner' }}
+              className="inline-flex items-center gap-1 text-sm text-[var(--color-text-mute)] hover:text-[var(--color-text)]"
+            >
+              <ArrowLeft className="size-4" aria-hidden="true" />
+              {t('backLink')}
+            </Link>
+          </nav>
+
+          <header className="mb-10">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center rounded-full bg-[var(--color-primary-soft)] px-2.5 py-1 font-mono text-[10px] tracking-[0.2em] text-[var(--color-primary-dk)] uppercase">
+                {groupLabel}
+              </span>
+              <span className="font-mono text-xs tracking-[0.25em] text-[var(--color-text-weak)] uppercase">
+                {spec.id}
+              </span>
+            </div>
+            <h1
+              className="mt-3 font-semibold tracking-tight text-balance text-[var(--color-text)]"
+              style={{
+                fontSize: 'var(--text-display-2)',
+                lineHeight: 'var(--text-display-2--line-height)',
+              }}
+            >
+              {name}
+            </h1>
+            <p className="mt-3 font-mono text-sm text-[var(--color-text-weak)]">
+              {t('tagline', { w: spec.widthMm, h: spec.heightMm })}
+            </p>
+            <p className="mt-5 text-[var(--color-text-mute)] text-[var(--text-body-lg)]">
+              {summary}
+            </p>
+          </header>
+
+          <section className="mb-12" aria-labelledby="scanner-doc-summary">
+            <h2
+              id="scanner-doc-summary"
+              className="mb-3 text-[var(--color-text)]"
+              style={{ fontSize: 'var(--text-h3)', lineHeight: 'var(--text-h3--line-height)' }}
+            >
+              {t('summarySection.title', { name })}
+            </h2>
+            <p className="mb-2 text-sm text-[var(--color-text-weak)]">
+              {t('summarySection.subtitle')}
+            </p>
+            <p className="leading-relaxed text-[var(--color-text-mute)]">{usage}</p>
+          </section>
+
+          <section
+            className="mb-12 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6"
+            aria-labelledby="scanner-doc-spec"
+          >
+            <h2
+              id="scanner-doc-spec"
+              className="mb-4 text-[var(--color-text)]"
+              style={{ fontSize: 'var(--text-h3)', lineHeight: 'var(--text-h3--line-height)' }}
+            >
+              {t('specSection.title')}
+            </h2>
+            <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+              <div>
+                <dt className="text-xs text-[var(--color-text-weak)]">
+                  {t('specSection.dimensions')}
+                </dt>
+                <dd className="mt-1 text-[var(--color-text)]">
+                  {spec.widthMm} × {spec.heightMm} mm
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[var(--color-text-weak)]">{t('specSection.pixels')}</dt>
+                <dd className="mt-1 font-mono text-[var(--color-text)]">
+                  {widthPx} × {heightPx} px
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[var(--color-text-weak)]">
+                  {t('specSection.twoSided')}
+                </dt>
+                <dd className="mt-1 text-[var(--color-text)]">
+                  {spec.hasBack ? t('specSection.twoSidedYes') : t('specSection.twoSidedNo')}
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="mb-12" aria-labelledby="scanner-doc-howto">
+            <h2
+              id="scanner-doc-howto"
+              className="mb-2 text-[var(--color-text)]"
+              style={{ fontSize: 'var(--text-h3)', lineHeight: 'var(--text-h3--line-height)' }}
+            >
+              {t('howTo.title', { name })}
+            </h2>
+            <p className="mb-6 text-sm text-[var(--color-text-mute)]">{t('howTo.subtitle')}</p>
+            <ol className="space-y-4">
+              {howToSteps.map((step, idx) => (
+                <li
+                  key={HOWTO_STEP_KEYS[idx]}
+                  className="flex items-start gap-4 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+                >
+                  <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-soft)] font-mono text-sm font-semibold text-[var(--color-primary-dk)]">
+                    {idx + 1}
+                  </span>
+                  <div>
+                    <h3 className="font-medium text-[var(--color-text)]">{step.name}</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-mute)]">
+                      {step.text}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section className="mb-12" aria-labelledby="scanner-doc-faq">
+            <h2
+              id="scanner-doc-faq"
+              className="mb-4 text-[var(--color-text)]"
+              style={{ fontSize: 'var(--text-h3)', lineHeight: 'var(--text-h3--line-height)' }}
+            >
+              {t('faq.title', { name })}
+            </h2>
+            <div className="space-y-4">
+              {faqEntries.map((entry, idx) => (
+                <details
+                  key={FAQ_ITEM_KEYS[idx]}
+                  className="group rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 open:shadow-[var(--shadow-sm)]"
+                >
+                  <summary className="cursor-pointer list-none text-sm font-medium text-[var(--color-text)] marker:hidden">
+                    {entry.question}
+                  </summary>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-mute)]">
+                    {entry.answer}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-[var(--radius-lg)] border border-[var(--color-primary-soft)] bg-[var(--color-primary-soft)] p-6">
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="inline-flex items-center gap-2 font-medium text-[var(--color-primary-dk)]">
+                <Check className="size-4 shrink-0" aria-hidden="true" />
+                {name}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href={{
+                    pathname: '/scanner',
+                    query: { spec: spec.id },
+                  }}
+                  className="inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-primary)] px-5 py-2.5 text-sm font-medium text-white shadow-[var(--shadow-sm)] hover:bg-[var(--color-primary-dk)]"
+                >
+                  {t('cta.primary', { name })}
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+                <Link
+                  href={{ pathname: '/scanner' }}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-[var(--color-primary-dk)] hover:text-[var(--color-primary)]"
+                >
+                  {t('cta.secondary')}
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          <RelatedDocSpecsRow docId={spec.id} t={t} tNames={tNames} />
+          <CrossSurfaceLinks current="scanner" />
+        </article>
+      </main>
+      <SiteFooter />
+      <JsonLd data={[webApplicationSchema(locale as Locale), breadcrumbs, howTo, faq]} />
+    </>
+  )
+}
+
+interface RelatedDocSpecsRowProps {
+  docId: string
+  t: Awaited<ReturnType<typeof getTranslations<'Scanner.detail'>>>
+  tNames: Awaited<ReturnType<typeof getTranslations<'Scanner.docSpecs'>>>
+}
+
+/**
+ * "Also try / 你可能还需要" row beneath the per-doc CTA. Renders 4–6
+ * related DocSpecs picked deterministically by `getRelatedDocSpecs`
+ * (same group first, then fill from other groups). The row is a
+ * `<nav aria-label>` so screen readers can skip into the
+ * recommendations directly.
+ */
+function RelatedDocSpecsRow({ docId, t, tNames }: RelatedDocSpecsRowProps) {
+  const related = getRelatedDocSpecs(docId)
+  if (related.length === 0) return null
+  return (
+    <nav
+      aria-label={t('related.heading')}
+      className="mt-12 border-t border-[var(--color-border)] pt-10"
+    >
+      <header className="mb-6">
+        <h2
+          className="text-[var(--color-text)]"
+          style={{
+            fontSize: 'var(--text-h3)',
+            lineHeight: 'var(--text-h3--line-height)',
+          }}
+        >
+          {t('related.heading')}
+        </h2>
+        <p className="mt-1 text-sm text-[var(--color-text-mute)]">{t('related.subtitle')}</p>
+      </header>
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {related.map((other) => (
+          <li key={other.id}>
+            <Link
+              href={{ pathname: `/scanner/${other.id}` }}
+              className="group flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition-colors hover:border-[var(--color-primary-soft)] hover:bg-[var(--color-primary-soft)]/30"
+            >
+              <span className="flex-1">
+                <span className="block text-sm font-medium text-[var(--color-text)]">
+                  {tNames(other.id as Parameters<typeof tNames>[0])}
+                </span>
+                <span className="mt-0.5 block font-mono text-xs text-[var(--color-text-weak)]">
+                  {other.widthMm} × {other.heightMm} mm
+                </span>
+              </span>
+              <ArrowRight
+                className="size-4 text-[var(--color-text-weak)] transition-transform group-hover:translate-x-0.5"
+                aria-hidden="true"
+              />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}

@@ -1,0 +1,343 @@
+'use client'
+
+/**
+ * Download buttons for the layout tab — PNG (raster) and PDF (vector).
+ *
+ * Reuses `renderLayout` for the PNG path and `exportLayoutPdf` for the
+ * vector PDF (jsPDF). Both honour the user's current paper/template/
+ * settings selection.
+ */
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { Download, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+
+import { Button } from '@/components/ui/button'
+import { centerCrop } from '@/features/crop/auto-center'
+import {
+  extractForegroundCapped,
+  parseHex,
+  scaleFrameForForeground,
+  type BgColor,
+} from '@/features/background/composite'
+import { buildFilename, triggerDownload } from '@/features/export'
+import { canvasToBlob } from '@/features/export/export-single'
+import { useEffectivePhotoSpecs } from '@/features/spec-manager/store'
+import { aspectRatio, derivePixels } from '@/lib/spec-units'
+import type { CropFrame, PhotoSpec } from '@/types/spec'
+
+import { exportLayoutPdf } from './export-pdf'
+import { renderLayout } from './render-layout'
+import { makeSpecResolver } from './spec-resolver'
+import { useLayoutStore } from './store'
+
+interface LayoutActionsProps {
+  bitmap: ImageBitmap
+  mask: ImageData | null
+  bg: BgColor
+  activeCropSpec: PhotoSpec | null
+  activeCropFrame: CropFrame | null
+}
+
+interface ForegroundCacheEntry {
+  /** Cache key — `bitmap` identity plus the mask's data byte-length. */
+  key: string
+  fg: ImageBitmap | null
+}
+
+/**
+ * Long-side cap used by the cached preview foreground. Anything
+ * larger than this in any output cell forces a one-shot full-res
+ * cut-out so the layout doesn't have to upscale a 1600 px preview
+ * bitmap into bigger spec cells.
+ */
+const PREVIEW_FG_LONGSIDE_PX = 1600
+
+export function LayoutActions({
+  bitmap,
+  mask,
+  bg,
+  activeCropSpec,
+  activeCropFrame,
+}: LayoutActionsProps) {
+  const t = useTranslations('Layout.actions')
+  const paper = useLayoutStore((s) => s.paper)
+  const template = useLayoutStore((s) => s.template)
+  const settings = useLayoutStore((s) => s.settings)
+  const effectiveSpecs = useEffectivePhotoSpecs()
+
+  const [busy, setBusy] = useState<'png' | 'pdf' | null>(null)
+  const [pngFilename, setPngFilename] = useState<string>('')
+  const [pdfFilename, setPdfFilename] = useState<string>('')
+
+  // Keep filenames live; they're effectively memoised values, but we
+  // recompute on a microtask to follow the React 19 effect rules.
+  useEffect(() => {
+    let cancelled = false
+    const work = async () => {
+      await null
+      if (cancelled) return
+      setPngFilename(
+        buildFilename({
+          kind: 'layout',
+          templateId: template.id,
+          paperId: paper.id,
+          ext: 'png',
+        }),
+      )
+      setPdfFilename(
+        buildFilename({
+          kind: 'layout',
+          templateId: template.id,
+          paperId: paper.id,
+          ext: 'pdf',
+        }),
+      )
+    }
+    void work()
+    return () => {
+      cancelled = true
+    }
+  }, [template.id, paper.id])
+
+  // Layout export works against the raw bitmap too — users who only
+  // crop + tile shouldn't need to run segmentation first. We only
+  // gate on `bitmap` so the buttons stay reactive once a photo
+  // exists.
+  const ready = useMemo(() => !!bitmap, [bitmap])
+
+  // Foreground cut-out cache. Running `extractForeground` on a 20MP
+  // photo is the single most expensive step of the layout export;
+  // when a user clicks PNG and then PDF (or vice-versa) we should
+  // re-use the result instead of paying for the cut-out twice. Keyed
+  // by the bitmap reference + mask buffer length so a fresh photo or
+  // a re-run segmentation invalidates it.
+  const foregroundCache = useRef<ForegroundCacheEntry | null>(null)
+
+  // Drop the cache on unmount so the stashed ImageBitmap gets closed.
+  useEffect(() => {
+    return () => {
+      foregroundCache.current?.fg?.close?.()
+      foregroundCache.current = null
+    }
+  }, [])
+
+  const getForeground = useCallback(async (): Promise<ImageBitmap | null> => {
+    if (!mask) return null
+    const key = `${bitmap.width}x${bitmap.height}:${mask.data.byteLength}`
+    const cached = foregroundCache.current
+    if (cached && cached.key === key && cached.fg) return cached.fg
+    if (cached) cached.fg?.close?.()
+    const fg = await extractForegroundCapped(bitmap, mask)
+    foregroundCache.current = { key, fg }
+    return fg
+  }, [bitmap, mask])
+
+  const prepareCellImages = useCallback(async (): Promise<Map<string, HTMLCanvasElement>> => {
+    const map = new Map<string, HTMLCanvasElement>()
+    // When the user hasn't run segmentation we paint the original
+    // bitmap directly — the spec background colour is irrelevant
+    // because the bitmap is opaque.
+    const cachedForeground = await getForeground()
+
+    // Compute the largest spec cell we'll need to paint. If any cell
+    // exceeds the cached preview foreground's long side, the cached
+    // bitmap would be upscaled into the cell — sharper to build a
+    // one-shot full-res cut-out for this export only. We never mutate
+    // the preview cache; the one-shot stays in the local scope and is
+    // closed at the end of the callback.
+    let maxCellLong = 0
+    const uniqueSpecIds = new Set<string>(template.items.map((it) => it.photoSpecId))
+    const resolveSpec = makeSpecResolver(effectiveSpecs, activeCropSpec ?? null)
+    for (const id of uniqueSpecIds) {
+      const spec = resolveSpec(id)
+      if (!spec) continue
+      const r = derivePixels(spec)
+      maxCellLong = Math.max(maxCellLong, r.width_px, r.height_px)
+    }
+    const cachedLong = cachedForeground
+      ? Math.max(cachedForeground.width, cachedForeground.height)
+      : 0
+    let oneShotForeground: ImageBitmap | null = null
+    if (mask && maxCellLong > cachedLong) {
+      oneShotForeground = await extractForegroundCapped(bitmap, mask, {
+        maxLongSide: Math.max(PREVIEW_FG_LONGSIDE_PX, Math.ceil(maxCellLong * 1.05)),
+      })
+    }
+    const foreground = oneShotForeground ?? cachedForeground
+    const source: ImageBitmap = foreground ?? bitmap
+    // Pre-resolve a paint colour for cells, only used when we actually
+    // have a transparent cut-out to flatten.
+    const fillRgb = bg.kind === 'color' ? (parseHex(bg.hex) ?? { r: 255, g: 255, b: 255 }) : null
+
+    try {
+      for (const id of uniqueSpecIds) {
+        const spec = resolveSpec(id)
+        if (!spec) continue
+        const frame =
+          spec.id === activeCropSpec?.id && activeCropFrame
+            ? activeCropFrame
+            : centerCrop({ width: bitmap.width, height: bitmap.height }, aspectRatio(spec))
+        const resolved = derivePixels(spec)
+
+        // Paint each cell directly into a fresh canvas at the spec's
+        // pixel size. `drawImage` uses the browser's native resampler —
+        // perceptually indistinguishable from a Lanczos pass for cells
+        // sized 295×413 to 600×800, but ~10× faster on a 20MP source.
+        const canvas = document.createElement('canvas')
+        canvas.width = resolved.width_px
+        canvas.height = resolved.height_px
+        const ctx = canvas.getContext('2d')
+        if (!ctx) continue
+        if (foreground && fillRgb) {
+          ctx.fillStyle = `rgb(${fillRgb.r}, ${fillRgb.g}, ${fillRgb.b})`
+          ctx.fillRect(0, 0, canvas.width, canvas.height)
+        }
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = 'high'
+        // The crop frame is authored in original-bitmap pixel space. When
+        // segmentation gave us a downscaled foreground via
+        // `extractForegroundCapped`, rescale the frame into the source's
+        // coord system so we sample the right region.
+        const sourceFrame = scaleFrameForForeground(
+          frame,
+          bitmap.width,
+          bitmap.height,
+          source.width,
+          source.height,
+        )
+        ctx.drawImage(
+          source as unknown as CanvasImageSource,
+          Math.max(0, Math.round(sourceFrame.x)),
+          Math.max(0, Math.round(sourceFrame.y)),
+          Math.max(1, Math.round(sourceFrame.w)),
+          Math.max(1, Math.round(sourceFrame.h)),
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+        )
+        map.set(id, canvas)
+      }
+    } finally {
+      // One-shot cut-out is per-export; close it before returning so
+      // the next click can free the memory after a GC cycle.
+      oneShotForeground?.close?.()
+    }
+    return map
+  }, [bitmap, mask, bg, activeCropSpec, activeCropFrame, template, effectiveSpecs, getForeground])
+
+  const onDownloadPng = useCallback(async () => {
+    if (busy) return
+    setBusy('png')
+    try {
+      const images = await prepareCellImages()
+      const result = renderLayout({
+        paper,
+        template,
+        getSpec: makeSpecResolver(effectiveSpecs, activeCropSpec ?? null),
+        getCellImage: (spec) => images.get(spec.id) ?? null,
+        settingsOverride: settings,
+      })
+      const blob = await canvasToBlob(result.canvas, 'image/png')
+      triggerDownload(blob, pngFilename)
+      toast.success(t('downloadSuccess', { filename: pngFilename }))
+    } catch {
+      toast.error(t('downloadFailed'))
+    } finally {
+      setBusy(null)
+    }
+  }, [
+    busy,
+    paper,
+    template,
+    settings,
+    pngFilename,
+    prepareCellImages,
+    t,
+    activeCropSpec,
+    effectiveSpecs,
+  ])
+
+  const onDownloadPdf = useCallback(async () => {
+    if (busy) return
+    setBusy('pdf')
+    try {
+      const images = await prepareCellImages()
+      const { blob } = await exportLayoutPdf({
+        paper,
+        template,
+        getSpec: makeSpecResolver(effectiveSpecs, activeCropSpec ?? null),
+        getCellImageDataUrl: async (spec) => {
+          const canvas = images.get(spec.id)
+          return canvas ? canvas.toDataURL('image/png') : null
+        },
+        settingsOverride: settings,
+      })
+      triggerDownload(blob, pdfFilename)
+      toast.success(t('downloadSuccess', { filename: pdfFilename }))
+    } catch {
+      toast.error(t('downloadFailed'))
+    } finally {
+      setBusy(null)
+    }
+  }, [
+    busy,
+    paper,
+    template,
+    settings,
+    pdfFilename,
+    prepareCellImages,
+    t,
+    activeCropSpec,
+    effectiveSpecs,
+  ])
+
+  return (
+    <section className="space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+      <header>
+        <h3 className="text-sm font-medium text-[var(--color-text)]">{t('title')}</h3>
+        <p className="mt-1 text-xs text-[var(--color-text-mute)]">{t('subtitle')}</p>
+      </header>
+
+      <div className="space-y-2">
+        <p className="text-xs text-[var(--color-text-mute)]">{t('filenamePreview')}</p>
+        <p className="rounded-md bg-[var(--color-divider)] px-2 py-1 font-mono text-xs break-all text-[var(--color-text)]">
+          {pngFilename}
+        </p>
+        <p className="rounded-md bg-[var(--color-divider)] px-2 py-1 font-mono text-xs break-all text-[var(--color-text)]">
+          {pdfFilename}
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Button
+          onClick={() => void onDownloadPng()}
+          disabled={!ready || busy !== null}
+          aria-busy={busy === 'png'}
+        >
+          {busy === 'png' ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <Download className="size-4" aria-hidden />
+          )}
+          {busy === 'png' ? t('preparing') : t('png')}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => void onDownloadPdf()}
+          disabled={!ready || busy !== null}
+          aria-busy={busy === 'pdf'}
+        >
+          {busy === 'pdf' ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <Download className="size-4" aria-hidden />
+          )}
+          {busy === 'pdf' ? t('preparing') : t('pdf')}
+        </Button>
+      </div>
+    </section>
+  )
+}

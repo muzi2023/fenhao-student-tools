@@ -1,0 +1,107 @@
+import type { Metadata, Viewport } from 'next'
+import { notFound } from 'next/navigation'
+import { hasLocale, NextIntlClientProvider } from 'next-intl'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
+import { fontMono, fontSans } from '@/lib/fonts'
+import { JsonLd } from '@/components/jsonld'
+import { isRtlLocale, routing } from '@/i18n/routing'
+import type { Locale } from '@/i18n/routing'
+import { Toaster } from '@/components/ui/sonner'
+import { organizationSchema } from '@/lib/seo/jsonld'
+import { BRAND_PRIMARY_HEX, SITE_NAME_FULL, SITE_URL } from '@/lib/seo/site-config'
+import { GoogleAnalytics } from '@/components/google-analytics'
+
+/**
+ * `process.env.VERCEL` is statically inlined to `"1"` at build time on
+ * Vercel and remains `undefined` everywhere else (local dev, CF Workers
+ * via @opennextjs/cloudflare). This lets us render `<Analytics />` —
+ * which inlines a `<script src="https://va.vercel-scripts.com/...">`
+ * via next/script — only on the Vercel deployment, so the CF deploy
+ * doesn't ship a useless dead script to its users.
+ */
+const ON_VERCEL = process.env.VERCEL === '1'
+
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }))
+}
+
+/**
+ * `metadataBase` anchors every per-route `generateMetadata` result so
+ * Next can resolve relative OG / Twitter image paths against the
+ * canonical host. Per-route `generateMetadata` still owns title /
+ * description / canonical / alternates, but the brand-suffix
+ * `title.template` lives here so every inner page automatically gets
+ * "<page> · Pixfit · 像配" without duplicating the suffix at every
+ * `generateMetadata` call site.
+ *
+ * `default` is the bare brand label used when a route omits its own
+ * title — keeps the SERP entry sensible if a future route ships
+ * before its `generateMetadata` does.
+ */
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_NAME_FULL,
+    template: `%s · ${SITE_NAME_FULL}`,
+  },
+}
+
+/**
+ * `viewport` + `themeColor` ride on the dedicated `viewport` export
+ * since Next.js 14; keeping them here means every page inherits the
+ * same crawler-friendly defaults without per-route boilerplate.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: BRAND_PRIMARY_HEX,
+  colorScheme: 'light',
+}
+
+interface LocaleLayoutProps {
+  children: React.ReactNode
+  params: Promise<{ locale: string }>
+}
+
+export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
+  const { locale } = await params
+  if (!hasLocale(routing.locales, locale)) notFound()
+  setRequestLocale(locale)
+
+  // Organization JSON-LD lives in the locale layout (not the page-
+  // level layouts) so every public route inherits the same brand
+  // identity node. We pull the description from `Home.metaDescription`
+  // — the canonical 1-sentence summary of what Pixfit is — so the
+  // knowledge-graph copy stays in lock-step with the home page.
+  const tHome = await getTranslations({ locale, namespace: 'Home' })
+  const organization = organizationSchema(locale as Locale, {
+    description: tHome('metaDescription'),
+  })
+
+  const dir = isRtlLocale(locale as Locale) ? 'rtl' : 'ltr'
+
+  return (
+    <html
+      lang={locale}
+      dir={dir}
+      className={`${fontSans.variable} ${fontMono.variable} h-full antialiased`}
+    >
+      <body className="flex min-h-full flex-col">
+        <NextIntlClientProvider>
+          {children}
+          <Toaster position="top-right" richColors closeButton />
+        </NextIntlClientProvider>
+        <JsonLd data={organization} />
+        {ON_VERCEL && (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        )}
+        <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+      </body>
+    </html>
+  )
+}

@@ -1,57 +1,190 @@
-# 分号学生工具 · 证件照制作
+# Pixfit · 像配
 
-`fenhao-student-tools` 是分号学生工具的第一期 H5/PWA 原型：在浏览器本地制作常见证件照，按规格导出 JPG，并自动排版为 A4 打印 PDF。
+> The one-stop, in-browser ID-photo workbench — swap backgrounds, crop, lay out, compress, export. Your photos never leave your device.
 
-## 运行
+[![CI](https://github.com/aapw01/id-photo-tool/actions/workflows/ci.yml/badge.svg)](https://github.com/aapw01/id-photo-tool/actions)
+[![License: MIT](https://img.shields.io/badge/license-MIT-10b981.svg)](LICENSE)
+[![Live](https://img.shields.io/badge/live-pix--fit.com-10b981.svg)](https://pix-fit.com)
+
+Languages: **English** · [中文](README.zh-CN.md)
+
+Live demo: <https://pix-fit.com>
+
+## Features
+
+- **No backend, no login** — Cutout, compositing, compression, and export all run in the browser; your photo is never uploaded anywhere.
+- **AI background removal + replacement** — In-browser MODNet inference produces a hair-level alpha matte with spill suppression; presets for white / blue / red / light gray plus any custom color.
+- **28 built-in photo specs** — China ID / passport / 1-inch / 2-inch, US / UK / Schengen / Japan / Korea / Canada / Australia / Singapore / Russia / India / Malaysia / Vietnam / Thailand / HK-Macau / Taiwan permits, plus Guokao / NCRE / postgrad exam registration.
+- **Composition-aware alignment** — Head position is auto-calibrated from MediaPipe landmarks + MODNet mask so the eye line and head-to-frame ratio fall within each spec's window.
+- **Multi-format export** — PNG (transparent / flat), JPG, WebP; compress to a target KB (binary search + pixel downsample); one-click copy to clipboard.
+- **Print layout** — 7 paper stocks × 12 layout templates so you can print multiple photos in a single sheet.
+- **13-locale SEO** — `zh-Hans` / `zh-Hant` / `en` / `ja` / `ko` / `es` / `pt-BR` / `fr` / `de` / `ru` / `it` / `vi` / `ar` (RTL) with full hreflang × canonical × JSON-LD (`WebApplication` / `WebSite` / `HowTo` / `FAQPage` / `BreadcrumbList`); each of the 28 specs has its own SSG landing page.
+
+## Pixfit Scanner · Document Scan Generator
+
+Sub-product at `/[locale]/scanner`. Turns phone snapshots of documents into "real scanner"-grade PDF / PNG sheets — production-ready.
+
+- **Perspective rectification** — A hand-ported `getPerspectiveTransform` + `warpPerspective` (8×8 Gaussian elimination, 4-tap bilinear, BORDER_REPLICATE) runs in a dedicated Web Worker — no OpenCV, near-zero bundle cost. The default crop is a center fit matched to the doc spec; the inline corner editor lets you drag the four handles to the document's actual edges.
+- **Three output modes** — Scan (color + auto white balance) / Copy (B&W binarize) / Enhance (saturation + contrast). Mode switches re-render from the rectified result without re-detecting corners.
+- **Optional watermark** — Off by default. When you turn it on, a 45° tiled overlay with your text, opacity, and density is applied as a single layer on the full A4 / Letter sheet at export time (per-side previews show the watermark too).
+- **Optional rounded corners** — Slider 0–80 px (off by default); applied identically across per-side preview, single-side PNG, and the packed sheet.
+- **Sheet preview dialog** — A "Preview sheet" button next to the export buttons opens a Radix dialog that renders the packed A4 / Letter / A5 sheet with the exact bytes you'd download (same paper, watermark, corner radius, output mode).
+- **12 DocSpecs, 3 paper sizes** — China / HK / TW / SG / IN ID cards, bank card, US driver license, China driver / vehicle license booklets, passport bio page, plus full-size A4 / Letter. Pack to A4 / Letter / A5.
+- **PDF / HEIC / EXIF / large-file pre-compression** — `.pdf` uploads render the first page lazily via `pdfjs-dist`; HEIC auto-converts via `heic2any`; EXIF orientation is auto-applied; images > 4000 px on the long edge are pre-downsampled to keep things snappy.
+- **SEO landing pages** — 12 DocSpecs × 13 locales = 156 SSG pages (`/[locale]/scanner/[docType]`), each with `HowTo` / `FAQPage` / `BreadcrumbList` JSON-LD; all URLs in the sitemap with full hreflang alternates.
+- **Privacy & legal copy** — The home page explains local-only processing and lawful use; the Terms page forbids forgery / impersonation.
+- **a11y** — All form controls have labels, all buttons have aria-labels, and the sheet-preview dialog uses Radix Dialog for focus trap, ESC-to-close, and click-outside-to-close.
+
+## Docs
+
+- Product requirements: [docs/PRD.md](docs/PRD.md)
+- Technical architecture: [docs/TECH_DESIGN.md](docs/TECH_DESIGN.md)
+- Project plan: [docs/PLAN.md](docs/PLAN.md)
+- Design system: [docs/DESIGN.md](docs/DESIGN.md)
+- Deployment guide: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- Task records: [docs/tasks/](docs/tasks/)
+
+## Local development
+
+Requirements:
+
+- Node.js 22.13+ (we recommend `nvm`; there's a `.nvmrc` at the repo root)
+- pnpm 11+
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-质量检查：
+Open <http://localhost:3000>.
+
+## Common scripts
 
 ```bash
-npm run lint
-npm run typecheck
-npm test
-npm run build
+pnpm dev            # dev server
+pnpm build          # production build
+pnpm start          # production server
+pnpm lint           # ESLint
+pnpm typecheck      # tsc --noEmit
+pnpm format         # Prettier write
+pnpm test           # vitest run
+pnpm i18n:check     # verify locale-bundle key parity (13 locales)
+pnpm models:fetch   # fetch the MODNet ONNX model into public/_models/
+pnpm cf:build       # bundle for Cloudflare Workers via OpenNext
+pnpm cf:deploy      # build + deploy to Cloudflare Workers
 ```
 
-## 已完成
+## Deployment
 
-- 手机拍照或从相册上传 JPG/PNG；读取 JPEG EXIF 方向并在 Canvas 中旋转后再处理。
-- 一寸 25×35 mm、二寸 35×49 mm、驾驶证常见横向 32×22 mm、教师资格证常见一寸白底、学历/学位证书常见二寸等可配置规格。
-- 规格配置在 `src/data/specs.json`，每项包含毫米、像素换算所需 DPI、底色、KB 选项、头部比例和来源说明。
-- 白 / 蓝 / 红底预览；默认不美颜、不改变五官。
-- 轻量本地抠图适配层：从四角背景颜色估计背景并生成透明蒙版；提供“重新抠图”、边缘容差、缩放、上下/左右微调入口。
-- 300 DPI 像素换算；JPG 目标大小选项（20 / 50 / 100 / 200 KB，按规格展示可用选项）。
-- JPG 下载和 A4 PDF 下载；PDF 使用 `pdf-lib` 在浏览器本地生成，按毫米尺寸在 A4 上重复排版。
-- 移动端响应式 UI、基础 PWA manifest、离线缓存 service worker 壳。
-- 清楚提示：具体报名要求以主管部门 / 学校公告为准。
+The repo supports **both** production deployments simultaneously — they don't conflict:
 
-## 抠图适配层与边界
+| Platform               | Config           | Trigger                          | Use case                                                                   |
+| ---------------------- | ---------------- | -------------------------------- | -------------------------------------------------------------------------- |
+| **Cloudflare Workers** | `wrangler.jsonc` | CF Dashboard Git integration     | Best for users in Mainland China; low traffic (Free-tier CPU limits apply) |
+| **Vercel**             | `vercel.json`    | Vercel Dashboard Git integration | Best for overseas users; no CPU limit; Hobby plan is more than enough      |
 
-本期没有把高质量 ONNX 人像模型塞进浏览器包。当前 provider 是可替换的轻量 fallback，适合背景相对干净的照片，复杂发丝、透明物体和强逆光场景需要更干净的原图或后续模型 provider。代码入口是 `src/lib/image.ts` 的 `subjectMaskCanvas` / `renderIdPhoto`，后续可以接入经过许可审计的本地 WebAssembly / WebGPU provider。
+Both pipelines run `pnpm models:fetch` first to drop MODNet into `public/_models/`; the script is idempotent — it won't re-download an existing file. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for switch / rollback steps.
 
-候选底座 HivisionIDPhotos 仅作为研究参考；本仓库未打包其模型、Face++ 检测器或任何非商业/云端服务，因此不引入 AGPL、非商业模型或额外 API 费用。若未来引入模型，需要把代码许可、模型许可、权重来源和 NOTICE 分开审计，并锁定可商用与可再分发版本。
+## Model asset
 
-## 浏览器与小程序边界
+Background removal uses the open-source [`Xenova/modnet`](https://huggingface.co/Xenova/modnet) model (Apache-2.0). We **do not** commit `.onnx` files to git. First-time setup or CI:
 
-本期优先交付浏览器 PWA。未来微信小程序可以使用 web-view 作为入口，或把规格 JSON 和导出逻辑迁移到小程序端；高质量抠图模型建议放在自有后端或独立 Web Worker 服务，并在明确授权后上传，不直接把大模型塞进小程序原生包。当前实现不上传图片、不接课程、题库、会员、账号、目录或线上部署。
+```bash
+pnpm models:fetch
+```
 
-## 许可
+The script tries **ModelScope (China mirror, default) → Hugging Face**, dropping the file at `public/_models/modnet.q.onnx` (~6.32 MB, INT8 quantized, SHA-256 `92e49898…`). The SHA-384 digest is pinned in [`src/features/segmentation/integrity.ts`](src/features/segmentation/integrity.ts) (`MODEL_SHA384`) and verified at runtime after download.
 
-本仓库自有代码使用 MIT License（见 `LICENSE`）。第三方依赖按各自许可证使用：React / Vite / TypeScript / Vitest 为 MIT，`pdf-lib` 为 MIT。仓库不包含外部模型权重。
+> ModelScope is Alibaba's Hugging Face mirror — same bytes (`X-Linked-Etag` matches), directly reachable inside China. HF's `cas-bridge.xethub.hf.co` is often DNS-poisoned there.
 
-## 验证记录
+### Fallbacks
 
-已验证：`npm run lint`、`npm run typecheck`、`npm test`（5 个核心测试）和 `npm run build`。测试覆盖毫米 ↔ 像素换算、DPI 规格、KB 压缩参数边界、文件名生成和 A4 PDF 字节流。构建产物在 `dist/`。
+If the default download fails (corporate proxy / restricted network), three options:
 
-本环境的浏览器 UI 与执行容器网络隔离，无法从 CUA 浏览器访问容器内的 `127.0.0.1` 开发服务器；已用本地 HTTP `curl` 验证 Vite 返回 200，并用构建命令确认静态产物可生成。建议在真实手机或同机浏览器打开 `npm run dev` 后继续做相机权限与真实照片回归。
+1. **Manual browser download**
+   - ModelScope (recommended): <https://www.modelscope.cn/models/Xenova/modnet/resolve/master/onnx/model_quantized.onnx>
+   - Hugging Face (needs network access): <https://huggingface.co/Xenova/modnet/resolve/main/onnx/model_quantized.onnx?download=true>
 
-## 文档扫描
+   Then import:
 
-“文档扫描”位于证件照页面下方，支持手机拍照或选择多页图片，浏览器本地自动裁边并生成多页 PDF。第一页可运行 OCR 自动命名，文件名始终可以手动修改；默认不创建目录、不自动分类、不上传图片。
+   ```bash
+   pnpm models:fetch --from-file ~/Downloads/model_quantized.onnx
+   ```
 
-当前裁边使用轻量边界检测，适合纸张与背景反差明显的照片。复杂透视、阴影和卷曲纸张后续可替换为 OpenCV/WASM provider。OCR 使用 Tesseract.js worker，首次识别可能需要下载语言包；当前默认英文语言包，中文语言包应单独评估体积与许可。
+2. **Proxy**
+
+   ```bash
+   HTTPS_PROXY=http://127.0.0.1:7890 pnpm models:fetch
+   ```
+
+3. **Custom URL** (e.g. self-hosted on R2 / your own CDN)
+
+   ```bash
+   MODEL_URL=https://cdn.pix-fit.com/models/modnet.q.onnx pnpm models:fetch
+   ```
+
+> If upstream updates the model, the SHA-384 check fails at runtime — bump `MODEL_SHA384` in [`integrity.ts`](src/features/segmentation/integrity.ts).
+
+## Routes
+
+Every public route is statically generated under `/[locale]/...` for all 13 locales (default `zh-Hans`):
+
+| Locale  | Native name    | Notes                                   |
+| ------- | -------------- | --------------------------------------- |
+| zh-Hans | 简体中文       | default; canonical for Mainland China   |
+| zh-Hant | 繁體中文       | Hong Kong / Taiwan / Macau              |
+| en      | English        | `x-default` hreflang anchor             |
+| ja      | 日本語         | AI-translated draft                     |
+| ko      | 한국어         | AI-translated draft                     |
+| es      | Español        | AI-translated draft (neutral Latin OK)  |
+| pt-BR   | Português (BR) | AI-translated draft (Brazilian)         |
+| fr      | Français       | AI-translated draft                     |
+| de      | Deutsch        | AI-translated draft                     |
+| ru      | Русский        | AI-translated draft                     |
+| it      | Italiano       | AI-translated draft                     |
+| vi      | Tiếng Việt     | AI-translated draft                     |
+| ar      | العربية        | AI-translated draft · RTL (`dir="rtl"`) |
+
+> Locales other than `zh-Hans` / `zh-Hant` / `en` are AI-translated initial drafts — community proofreading is welcome via Pull Request.
+
+| Route                | Content                                                                  |
+| -------------------- | ------------------------------------------------------------------------ |
+| `/`                  | Home · landing + upload                                                  |
+| `/studio`            | Studio · cutout / background / crop / layout / export (supports `?tab=`) |
+| `/scanner`           | **Sub-product** · Document Scan Generator                                |
+| `/scanner/[docType]` | DocSpec SEO landing page (12 × 13 = 156 SSG pages)                       |
+| `/sizes`             | All 28 built-in photo specs (SEO index)                                  |
+| `/sizes/[specId]`    | Per-spec detail (with HowTo / FAQ JSON-LD)                               |
+| `/paper`             | 7 built-in paper stocks                                                  |
+| `/templates`         | 12 built-in layout templates                                             |
+| `/specs`             | Spec manager · custom PhotoSpec / PaperSpec / LayoutTemplate             |
+| `/privacy`           | Privacy policy                                                           |
+| `/terms`             | Terms of service                                                         |
+| `/sitemap.xml`       | All routes × 13 locales (hreflang alternates included)                   |
+| `/robots.txt`        | Public crawl rules                                                       |
+
+Dev-only routes (`/dev/*`) are hidden by default; set `NEXT_PUBLIC_ENABLE_DEV_PAGES=1` to enable them.
+
+## Tech stack
+
+- Next.js 15 (App Router) + React 19 + TypeScript 5.6
+- Tailwind CSS v4 + shadcn/ui (New York) + Lucide / flag-icons
+- next-intl v4 (route-based i18n via the `/[locale]/` segment)
+- State: Zustand
+- Imaging: ONNX Runtime Web (MODNet) + MediaPipe Tasks Vision + native Canvas / OffscreenCanvas + jsPDF + `pdfjs-dist`
+- Hand-ported perspective rectification (no OpenCV) running in a Web Worker
+- Deploy: Cloudflare Workers via `@opennextjs/cloudflare`, and Vercel
+
+## Contributing
+
+Issues and PRs welcome. Please follow:
+
+- Conventional Commits (`feat:` / `fix:` / `chore:` …) — `commitlint` enforces this on the `commit-msg` hook.
+- Pre-commit `lint-staged` runs `eslint --fix` + `prettier --write` automatically.
+- New i18n keys must land in **every** locale file (`src/i18n/messages/*.json`, 13 bundles) or `pnpm i18n:check` will fail. The non-`zh-Hans`/`zh-Hant`/`en` bundles ship as AI-translated drafts — native-speaker fixes via PR are highly welcome.
+
+## License
+
+[MIT](LICENSE) © 2026 Pixfit Contributors
+
+The background-removal model [`Xenova/modnet`](https://huggingface.co/Xenova/modnet) is Apache-2.0 and shipped separately — not bundled in this repo.

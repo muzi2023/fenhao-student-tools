@@ -1,0 +1,75 @@
+import type { Metadata } from 'next'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
+import { hasLocale } from 'next-intl'
+import { notFound } from 'next/navigation'
+
+import { Breadcrumb } from '@/components/breadcrumb'
+import { JsonLd } from '@/components/jsonld'
+import { SiteFooter } from '@/components/site-footer'
+import { SiteHeader } from '@/components/site-header'
+import { SpecManagerShellLazy } from '@/features/spec-manager/spec-manager-shell-lazy'
+import type { Locale } from '@/i18n/routing'
+import { routing } from '@/i18n/routing'
+import { breadcrumbItemsToJsonLd, getBreadcrumbItems } from '@/lib/seo/breadcrumbs'
+import { buildMetadata } from '@/lib/seo/metadata'
+
+interface SpecsPageProps {
+  params: Promise<{ locale: string }>
+}
+
+export async function generateMetadata({ params }: SpecsPageProps): Promise<Metadata> {
+  const { locale } = await params
+  if (!hasLocale(routing.locales, locale)) return {}
+  const t = await getTranslations({ locale, namespace: 'SpecManager' })
+  return buildMetadata({
+    locale: locale as Locale,
+    path: '/specs',
+    title: t('title'),
+    description: t('subtitle'),
+  })
+}
+
+export default async function SpecsPage({ params }: SpecsPageProps) {
+  const { locale } = await params
+  if (!hasLocale(routing.locales, locale)) notFound()
+  setRequestLocale(locale)
+
+  const t = await getTranslations('SpecManager')
+  const tNav = await getTranslations('Nav')
+
+  const breadcrumbItems = getBreadcrumbItems('specs', {
+    labels: { home: tNav('home'), specs: t('title') },
+  })
+  const breadcrumbs = breadcrumbItemsToJsonLd(breadcrumbItems, locale as Locale)
+
+  return (
+    <>
+      <SiteHeader />
+      <main className="flex-1">
+        <section className="mx-auto w-full max-w-6xl px-6 pt-10 pb-16">
+          <Breadcrumb items={breadcrumbItems} className="mb-6" />
+          <header className="mb-8">
+            <h1
+              className="font-semibold tracking-tight text-[var(--color-text)]"
+              style={{
+                fontSize: 'var(--text-display-3)',
+                lineHeight: 'var(--text-display-3--line-height)',
+              }}
+            >
+              {t('title')}
+            </h1>
+            <p className="mt-2 max-w-2xl text-[var(--color-text-mute)] text-[var(--text-body-lg)]">
+              {t('subtitle')}
+            </p>
+          </header>
+
+          {/* Lazy + ssr:false to keep cold-start CPU under Cloudflare
+              Workers' 10 ms free-tier budget. See spec-manager-shell-lazy. */}
+          <SpecManagerShellLazy />
+        </section>
+      </main>
+      <SiteFooter />
+      <JsonLd data={[breadcrumbs]} />
+    </>
+  )
+}
