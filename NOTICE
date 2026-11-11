@@ -1,0 +1,5 @@
+Fenhao Student Tools
+
+This repository does not bundle third-party model weights. Runtime dependencies retain their upstream licenses:
+- React, React DOM, Vite, TypeScript, Vitest: MIT
+- pdf-lib: MIT
