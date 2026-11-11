@@ -2,7 +2,7 @@
   "name": "分号学生工具 · 证件照制作",
   "short_name": "分号证件照",
   "lang": "zh-CN",
-  "start_url": "/",
+  "start_url": "/fenhao-student-tools/",
   "display": "standalone",
   "background_color": "#f5f2ed",
   "theme_color": "#f5f2ed",
