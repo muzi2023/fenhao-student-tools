@@ -188,3 +188,7 @@ dev-only 路由（`/dev/*`）默认隐藏；需 `NEXT_PUBLIC_ENABLE_DEV_PAGES=1`
 [MIT](LICENSE) © 2026 Pixfit Contributors
 
 抠图模型 [`Xenova/modnet`](https://huggingface.co/Xenova/modnet) 为 Apache-2.0，单独发布，未随仓库分发。
+
+## 文档扫描工具
+
+普通纸张文档扫描已作为独立路由集成：`/[locale]/document-scanner`。该模块直接复用 MIT 项目 `m-a-c-m/DocumentScanner` 的摄像头取景、自动四角识别、透视校正、多页 PDF、OCR 和本地存储代码，保留原作者许可文本，见 `LICENSES/DOCUMENTSCANNER-MIT.txt`。
