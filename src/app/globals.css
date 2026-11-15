@@ -85,6 +85,11 @@
  * our design language without further patching.
  */
 :root {
+  --font-app-sans: 'Inter', 'PingFang SC', 'PingFang TC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    'Noto Sans SC', 'Noto Sans TC', system-ui, -apple-system, sans-serif;
+  --font-app-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
+    'Liberation Mono', monospace;
+
   --background: var(--color-bg);
   --foreground: var(--color-text);
 
@@ -126,7 +131,7 @@
   --sidebar-accent: var(--color-primary-soft);
   --sidebar-accent-foreground: var(--color-primary-dk);
   --sidebar-border: var(--color-border);
-  --sidebar-ring: var(--color-primary);
+  --sidebar-ring: var(--color-border);
 
   --radius: var(--radius-md);
 }
@@ -146,7 +151,7 @@
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
+  --color-foreground: var(--foreground);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -203,14 +208,7 @@
 }
 
 /*
- * Respect `prefers-reduced-motion: reduce`. We damp every animation /
- * transition / scroll-behavior to a near-instant state so users with
- * vestibular sensitivity don't have to fight the UI. The opacity /
- * cross-fade transitions in tw-animate-css (e.g. Dialog, Sheet) are
- * still useful as discrete state changes so we keep them visible but
- * short (40ms) rather than zeroing them out.
- *
- * Pattern follows MDN: https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
+ * Respect `prefers-reduced-motion: reduce`.
  */
 @media (prefers-reduced-motion: reduce) {
   *,
