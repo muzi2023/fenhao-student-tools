@@ -1,24 +1,10 @@
-import { Inter, JetBrains_Mono } from 'next/font/google'
-
 /**
  * Pixfit 字体加载
  *
- * 说明：
- *  - `next/font/google` 会在构建时把字体下载并自托管化（部署后浏览器请求落到我们自己的域名）。
- *  - 中文字体走系统优先 + Noto SC/TC 兜底，不在 next/font 中加载（体积过大，未做子集化时不划算）。
- *  - 详细策略见 docs/DESIGN.md §3.3 与 docs/tasks/M1.md T09/T10。
+ * 运行时使用系统字体栈，不在构建阶段请求 Google Fonts。这样在
+ * Vercel、Cloudflare 和中国大陆网络环境下都不会因为字体下载失败
+ * 阻断部署；中文字体仍由 globals.css 的系统优先栈处理。
  */
 
-export const fontSans = Inter({
-  variable: '--font-app-sans',
-  subsets: ['latin'],
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-})
-
-export const fontMono = JetBrains_Mono({
-  variable: '--font-app-mono',
-  subsets: ['latin'],
-  display: 'swap',
-  weight: ['400', '500'],
-})
+export const fontSans = { variable: '' } as const
+export const fontMono = { variable: '' } as const
