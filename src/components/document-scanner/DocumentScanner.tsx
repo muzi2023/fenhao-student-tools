@@ -109,8 +109,9 @@ function rotateCanvasDegrees(canvas: HTMLCanvasElement, degrees: number): HTMLCa
   return out;
 }
 
-export default function DocumentScanner({ locale = "es" }: Props) {
+export default function DocumentScanner({ locale = "zh-Hans" }: Props) {
   const isEs = locale === "es";
+  const isZh = locale === "zh-Hans";
 
   const [pages, setPages] = useState<Page[]>([]);
   const [editing, setEditing] = useState<Editing | null>(null);
@@ -133,7 +134,7 @@ export default function DocumentScanner({ locale = "es" }: Props) {
   const [portalMobile, setPortalMobile] = useState(false);
   const [mobileTab, setMobileTab] = useState<"camera" | "edit" | "gallery">("camera");
 
-  const baseName = scanName.trim().replace(/[^a-zA-Z0-9-_ ]/g, "").trim().replace(/\s+/g, "-") || "scan";
+  const baseName = scanName.trim().replace(/[^\p{L}\p{N}._-]+/gu, "").trim().replace(/\s+/g, "-") || "scan";
 
   // The tool page wraps this component in a `.glass` card (backdrop-filter),
   // and any ancestor with a transform/backdrop-filter creates a new
@@ -333,7 +334,7 @@ export default function DocumentScanner({ locale = "es" }: Props) {
         setTorchSupported(!!caps?.torch);
       } catch { setTorchSupported(false); }
     } catch {
-      setCameraErr(isEs ? "No se pudo abrir la cámara. Sube una imagen en su lugar." : "Couldn't open the camera. Upload an image instead.");
+      setCameraErr(isZh ? "无法打开摄像头，请改为上传图片。" : isEs ? "No se pudo abrir la cámara. Sube una imagen en su lugar." : "Couldn't open the camera. Upload an image instead.");
     }
   };
 
@@ -626,11 +627,11 @@ export default function DocumentScanner({ locale = "es" }: Props) {
   const savePage = (goTo: "camera" | "gallery" = "gallery") => {
     const img = editImgRef.current;
     if (!img || !editing?.corners) return;
-    setBusy(isEs ? "Procesando…" : "Processing…");
+    setBusy(isZh ? "正在处理…" : isEs ? "Procesando…" : "Processing…");
     setTimeout(async () => {
       try {
         let out = warpDocument(img, editing.corners!);
-        setBusy(isEs ? "Comprobando orientación…" : "Checking orientation…");
+        setBusy(isZh ? "正在识别方向…" : isEs ? "Comprobando orientación…" : "Checking orientation…");
         const degrees = await detectOrientationDegrees(out);
         if (degrees) out = rotateCanvasDegrees(out, degrees);
         applyScanFilter(out, editing.filter);
@@ -657,7 +658,7 @@ export default function DocumentScanner({ locale = "es" }: Props) {
 
   const clearAll = () => {
     if (pagesRef.current.length && typeof window !== "undefined" &&
-      !window.confirm(isEs ? "¿Borrar todas las páginas escaneadas? No se puede deshacer." : "Delete all scanned pages? This can't be undone.")) return;
+      !window.confirm(isZh ? "确定删除全部扫描页面吗？此操作无法撤销。" : isEs ? "¿Borrar todas las páginas escaneadas? No se puede deshacer." : "Delete all scanned pages? This can't be undone.")) return;
     setPages([]);
     setOcr(null);
     idbClear();
@@ -670,7 +671,7 @@ export default function DocumentScanner({ locale = "es" }: Props) {
 
   const discardEdit = () => {
     if (touchedRef.current && typeof window !== "undefined" &&
-      !window.confirm(isEs ? "Has movido las esquinas — ¿descartar de todas formas?" : "You've adjusted the corners — discard anyway?")) return;
+      !window.confirm(isZh ? "你已经调整了四角，仍要放弃吗？" : isEs ? "Has movido las esquinas — ¿descartar de todas formas?" : "You've adjusted the corners — discard anyway?")) return;
     const next = queueRef.current.shift();
     if (next) startEdit(next); else { setEditing(null); setMobileTab("camera"); }
   };
@@ -725,20 +726,20 @@ export default function DocumentScanner({ locale = "es" }: Props) {
   // flow above is never at risk of regressing.
   const exportSearchablePdf = async () => {
     setPdfErr("");
-    setBusy(isEs ? "Preparando OCR…" : "Preparing OCR…");
+    setBusy(isZh ? "正在准备文字识别…" : isEs ? "Preparando OCR…" : "Preparing OCR…");
     let worker: Tesseract.Worker | null = null;
     try {
       const Tesseract = (await import("tesseract.js")).default;
       worker = await Tesseract.createWorker("eng+spa");
       const pagePdfs: Uint8Array[] = [];
       for (let i = 0; i < pages.length; i++) {
-        setBusy(isEs ? `OCR página ${i + 1}/${pages.length}…` : `OCR page ${i + 1}/${pages.length}…`);
+        setBusy(isZh ? `正在识别第 ${i + 1}/${pages.length} 页…` : isEs ? `OCR página ${i + 1}/${pages.length}…` : `OCR page ${i + 1}/${pages.length}…`);
         const url = pages[i].out.toDataURL("image/jpeg", 0.92);
         const { data } = await worker.recognize(url, {}, { text: false, pdf: true });
         if (data.pdf) pagePdfs.push(new Uint8Array(data.pdf));
       }
       if (!pagePdfs.length) throw new Error("no pdf pages produced");
-      setBusy(isEs ? "Combinando PDF…" : "Combining PDF…");
+      setBusy(isZh ? "正在合并 PDF…" : isEs ? "Combinando PDF…" : "Combining PDF…");
       const { PDFDocument } = await import("pdf-lib");
       const merged = await PDFDocument.create();
       for (const bytes of pagePdfs) {
@@ -750,9 +751,11 @@ export default function DocumentScanner({ locale = "es" }: Props) {
       const blob = new Blob([finalBytes.buffer as ArrayBuffer], { type: "application/pdf" });
       await downloadOrShareBlob(blob, `${baseName}.pdf`);
     } catch {
-      setPdfErr(isEs
-        ? "No se pudo generar el PDF con texto buscable. Prueba a desmarcar esa opción."
-        : "Couldn't build the searchable PDF. Try unchecking that option.");
+      setPdfErr(isZh
+        ? "无法生成可搜索 PDF，请取消勾选该选项后重试。"
+        : isEs
+          ? "No se pudo generar el PDF con texto buscable. Prueba a desmarcar esa opción."
+          : "Couldn't build the searchable PDF. Try unchecking that option.");
     } finally {
       if (worker) await worker.terminate();
       setBusy("");
@@ -762,7 +765,7 @@ export default function DocumentScanner({ locale = "es" }: Props) {
   const exportPdf = async () => {
     if (!pages.length) return;
     if (searchablePdf) { await exportSearchablePdf(); return; }
-    setBusy(isEs ? "Creando PDF…" : "Building PDF…");
+    setBusy(isZh ? "正在生成 PDF…" : isEs ? "Creando PDF…" : "Building PDF…");
     try {
       const { jsPDF } = await import("jspdf");
       const preset = pageSize !== "auto";
@@ -799,7 +802,7 @@ export default function DocumentScanner({ locale = "es" }: Props) {
       if (blob) await downloadOrShareBlob(blob, `${baseName}.jpg`);
       return;
     }
-    setBusy(isEs ? "Comprimiendo…" : "Zipping…");
+    setBusy(isZh ? "正在打包 ZIP…" : isEs ? "Comprimiendo…" : "Zipping…");
     try {
       const { zipSync } = await import("fflate");
       const files: Record<string, Uint8Array> = {};
@@ -825,36 +828,40 @@ export default function DocumentScanner({ locale = "es" }: Props) {
           if (m.status === "recognizing text") setOcr((o) => o ? { ...o, prog: Math.round(m.progress * 100) } : o);
         },
       });
-      setOcr({ text: data.text.trim() || (isEs ? "(No se detectó texto)" : "(No text detected)"), prog: 100, busy: false });
+      setOcr({ text: data.text.trim() || (isZh ? "（未识别到文字）" : isEs ? "(No se detectó texto)" : "(No text detected)"), prog: 100, busy: false });
     } catch {
-      setOcr({ text: isEs ? "No se pudo extraer el texto." : "Couldn't extract text.", prog: 0, busy: false });
+      setOcr({ text: isZh ? "文字提取失败。" : isEs ? "No se pudo extraer el texto." : "Couldn't extract text.", prog: 0, busy: false });
     }
   };
 
   const filterLabel = (f: ScanFilter) =>
-    f === "magic" ? (isEs ? "Mágico" : "Magic")
-      : f === "color" ? (isEs ? "Color" : "Color")
-        : f === "gray" ? (isEs ? "Gris" : "Gray")
-          : f === "whiteboard" ? (isEs ? "Pizarra" : "Whiteboard")
-            : (isEs ? "B/N" : "B&W");
+    f === "magic" ? (isZh ? "智能增强" : isEs ? "Mágico" : "Magic")
+      : f === "color" ? (isZh ? "彩色" : isEs ? "Color" : "Color")
+        : f === "gray" ? (isZh ? "灰度" : isEs ? "Gris" : "Gray")
+          : f === "whiteboard" ? (isZh ? "白板" : isEs ? "Pizarra" : "Whiteboard")
+            : (isZh ? "黑白" : isEs ? "B/N" : "B&W");
 
   const topBanners = (
     <>
       <div className="flex items-start gap-2 rounded-xl border border-green-500/20 bg-green-500/5 px-4 py-2.5 text-xs text-green-400/90">
         <FiFileText className="mt-0.5 shrink-0" />
         <span>
-          {isEs
-            ? "100% en tu navegador. Tus documentos nunca se suben a ningún servidor — el escaneo, los filtros y el OCR se procesan en tu dispositivo."
-            : "100% in your browser. Your documents are never uploaded — scanning, filters and OCR all run on your device."}
+          {isZh
+            ? "全程在浏览器内完成。文档不会上传，扫描、滤镜和文字识别都在你的设备上运行。"
+            : isEs
+              ? "100% en tu navegador. Tus documentos nunca se suben a ningún servidor — el escaneo, los filtros y el OCR se procesan en tu dispositivo."
+              : "100% in your browser. Your documents are never uploaded — scanning, filters and OCR all run on your device."}
         </span>
       </div>
 
       {restoredCount > 0 && (
         <div className="flex items-start justify-between gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs text-primary/90">
           <span>
-            {isEs
-              ? `Se ${restoredCount === 1 ? "ha" : "han"} recuperado ${restoredCount} ${restoredCount === 1 ? "página guardada" : "páginas guardadas"} de tu última sesión. Solo se guardan en este navegador, en ningún otro sitio.`
-              : `Restored ${restoredCount} ${restoredCount === 1 ? "page" : "pages"} from your last session. They're only saved in this browser, nowhere else.`}
+            {isZh
+              ? `已恢复上次会话中的 ${restoredCount} 页。文件只保存在当前浏览器中，不会上传到其他地方。`
+              : isEs
+                ? `Se ${restoredCount === 1 ? "ha" : "han"} recuperado ${restoredCount} ${restoredCount === 1 ? "página guardada" : "páginas guardadas"} de tu última sesión. Solo se guardan en este navegador, en ningún otro sitio.`
+                : `Restored ${restoredCount} ${restoredCount === 1 ? "page" : "pages"} from your last session. They're only saved in this browser, nowhere else.`}
           </span>
           <button onClick={() => setRestoredCount(0)} className="shrink-0 text-primary/60 transition-colors hover:text-primary">
             <FiX size={14} />
@@ -869,13 +876,13 @@ export default function DocumentScanner({ locale = "es" }: Props) {
       <div className="grid gap-3 sm:grid-cols-2">
         <button onClick={openCamera} className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border/40 bg-surface/30 px-6 py-10 text-center transition-colors hover:border-primary/40">
           <FiCamera className="text-3xl text-primary/70" />
-          <span className="text-sm font-medium text-text">{isEs ? "Abrir cámara" : "Open camera"}</span>
-          <span className="text-xs text-text-muted/60">{isEs ? "Escanea con la cámara trasera" : "Scan with the back camera"}</span>
+          <span className="text-sm font-medium text-text">{isZh ? "打开摄像头" : isEs ? "Abrir cámara" : "Open camera"}</span>
+          <span className="text-xs text-text-muted/60">{isZh ? "使用后置摄像头扫描" : isEs ? "Escanea con la cámara trasera" : "Scan with the back camera"}</span>
         </button>
         <button onClick={() => fileRef.current?.click()} className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border/40 bg-surface/30 px-6 py-10 text-center transition-colors hover:border-primary/40">
           <FiUpload className="text-3xl text-primary/70" />
-          <span className="text-sm font-medium text-text">{isEs ? "Subir imágenes" : "Upload images"}</span>
-          <span className="text-xs text-text-muted/60">{isEs ? "Una o varias a la vez" : "One or several at once"}</span>
+          <span className="text-sm font-medium text-text">{isZh ? "上传图片" : isEs ? "Subir imágenes" : "Upload images"}</span>
+          <span className="text-xs text-text-muted/60">{isZh ? "可一次选择一张或多张" : isEs ? "Una o varias a la vez" : "One or several at once"}</span>
         </button>
         <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => onFiles(e.target.files)} />
       </div>
@@ -886,26 +893,26 @@ export default function DocumentScanner({ locale = "es" }: Props) {
   const cameraControlsRow = (
     <div className="flex flex-wrap items-center justify-center gap-3">
       <button onClick={captureFrame} className="flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/15 px-6 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/25">
-        <FiCamera /> {isEs ? "Capturar" : "Capture"}
+        <FiCamera /> {isZh ? "拍照" : isEs ? "Capturar" : "Capture"}
       </button>
       <label className="flex cursor-pointer items-center gap-1.5 text-xs text-text-muted">
         <input type="checkbox" checked={autoShot} onChange={(e) => setAutoShot(e.target.checked)} className="accent-primary" />
-        {isEs ? "Captura automática" : "Auto-capture"}
+        {isZh ? "自动拍摄" : isEs ? "Captura automática" : "Auto-capture"}
       </label>
       {torchSupported && (
         <button onClick={toggleTorch} className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${torchOn ? "border-yellow-400/60 bg-yellow-400/15 text-yellow-300" : "border-border/30 bg-surface/40 text-text-muted hover:text-text"}`}>
-          <FiSun /> {isEs ? "Flash" : "Flash"}
+          <FiSun /> {isZh ? "闪光灯" : isEs ? "Flash" : "Flash"}
         </button>
       )}
       <button onClick={stopCamera} className="flex items-center gap-2 rounded-xl border border-border/30 bg-surface/40 px-4 py-3 text-sm font-medium text-text-muted transition-colors hover:text-text">
-        <FiX /> {isEs ? "Cerrar" : "Close"}
+        <FiX /> {isZh ? "关闭" : isEs ? "Cerrar" : "Close"}
       </button>
     </div>
   );
 
   const cameraHint = (
     <p className="text-center text-[11px] text-text-muted/50">
-      {isEs ? "Enfoca el documento; cuando se resalte en verde se captura solo (o pulsa Capturar)." : "Point at the document; when it's highlighted green it captures itself (or tap Capture)."}
+      {isZh ? "对准文档，边缘变成绿色后会自动拍摄，也可以点击“拍照”。" : isEs ? "Enfoca el documento; cuando se resalte en verde se captura solo (o pulsa Capturar)." : "Point at the document; when it's highlighted green it captures itself (or tap Capture)."}
     </p>
   );
 
@@ -918,8 +925,8 @@ export default function DocumentScanner({ locale = "es" }: Props) {
           style={{ backgroundColor: autoShot && captureHold > 0 ? holdColor(captureHold) : "rgba(34,197,94,0.85)" }}
         >
           {autoShot && captureHold > 0
-            ? (isEs ? "Quieto… capturando" : "Hold still… capturing")
-            : (isEs ? "Documento detectado" : "Document detected")}
+            ? (isZh ? "请保持稳定，正在拍摄…" : isEs ? "Quieto… capturando" : "Hold still… capturing")
+            : (isZh ? "已识别到文档" : isEs ? "Documento detectado" : "Document detected")}
         </span>
       )}
       {docDetected && autoShot && captureHold > 0 && (
@@ -960,7 +967,7 @@ export default function DocumentScanner({ locale = "es" }: Props) {
   const editBlockContent = !editing ? null : (
         <div className="space-y-3 rounded-2xl border border-border/30 bg-surface/30 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-text-muted/60">
-            {isEs ? "Ajusta las esquinas del documento" : "Adjust the document corners"}
+            {isZh ? "调整文档四角" : isEs ? "Ajusta las esquinas del documento" : "Adjust the document corners"}
           </p>
           <div
             ref={editBoxRef}
@@ -1017,10 +1024,10 @@ export default function DocumentScanner({ locale = "es" }: Props) {
               </button>
             ))}
             <button onClick={rotateEdit} className="flex items-center gap-1 rounded-lg border border-border/30 bg-surface/40 px-3 py-1.5 text-xs text-text-muted transition-colors hover:text-text">
-              <FiRotateCw /> {isEs ? "Girar" : "Rotate"}
+              <FiRotateCw /> {isZh ? "旋转" : isEs ? "Girar" : "Rotate"}
             </button>
             <button onClick={runAutoDetect} className="flex items-center gap-1 rounded-lg border border-border/30 bg-surface/40 px-3 py-1.5 text-xs text-text-muted transition-colors hover:text-text">
-              <FiZap /> {isEs ? "Auto-detectar" : "Auto-detect"}
+              <FiZap /> {isZh ? "自动识别" : isEs ? "Auto-detectar" : "Auto-detect"}
             </button>
           </div>
 
@@ -1031,17 +1038,17 @@ export default function DocumentScanner({ locale = "es" }: Props) {
               scroll problem, so it stays in normal flow there. */}
           <div className="sticky bottom-0 z-10 -mx-4 -mb-4 flex flex-wrap gap-2 border-t border-border/30 bg-surface/95 px-4 py-3 backdrop-blur-md sm:static sm:mx-0 sm:mb-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none">
             <button onClick={() => savePage("gallery")} disabled={!!busy} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/20 disabled:opacity-50">
-              <FiCheck /> {busy || (isEs ? "Guardar" : "Save")}
+              <FiCheck /> {busy || (isZh ? "保存" : isEs ? "Guardar" : "Save")}
             </button>
-            <button onClick={() => savePage("camera")} disabled={!!busy} title={isEs ? "Guardar y escanear otra" : "Save and scan another"} className="flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/20 disabled:opacity-50 sm:hidden">
+            <button onClick={() => savePage("camera")} disabled={!!busy} title={isZh ? "保存并扫描下一张" : isEs ? "Guardar y escanear otra" : "Save and scan another"} className="flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/20 disabled:opacity-50 sm:hidden">
               <FiCamera />
             </button>
             <button onClick={discardEdit} className="flex items-center gap-2 rounded-xl border border-border/30 bg-surface/40 px-4 py-2.5 text-sm font-medium text-text-muted transition-colors hover:text-text">
-              <FiX /> {isEs ? "Descartar" : "Discard"}
+              <FiX /> {isZh ? "放弃" : isEs ? "Descartar" : "Discard"}
             </button>
           </div>
           {queueRef.current.length > 0 && (
-            <p className="text-center text-xs text-text-muted/50">{isEs ? `Quedan ${queueRef.current.length} imágenes en cola` : `${queueRef.current.length} more images queued`}</p>
+            <p className="text-center text-xs text-text-muted/50">{isZh ? `还有 ${queueRef.current.length} 张图片待处理` : isEs ? `Quedan ${queueRef.current.length} imágenes en cola` : `${queueRef.current.length} more images queued`}</p>
           )}
         </div>
   );
@@ -1061,14 +1068,14 @@ export default function DocumentScanner({ locale = "es" }: Props) {
         <div className="space-y-3 rounded-2xl border border-border/30 bg-surface/30 p-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wide text-text-muted/60">
-              {isEs ? `Páginas (${pages.length})` : `Pages (${pages.length})`}
+              {isZh ? `页面（${pages.length}）` : isEs ? `Páginas (${pages.length})` : `Pages (${pages.length})`}
             </p>
             <button onClick={clearAll} className="text-xs text-text-muted/60 transition-colors hover:text-red-400">
-              {isEs ? "Limpiar todo" : "Clear all"}
+              {isZh ? "全部清除" : isEs ? "Limpiar todo" : "Clear all"}
             </button>
           </div>
           <p className="-mt-1 text-[11px] text-text-muted/50">
-            {isEs ? "Pulsa Editar para reajustar esquinas o cambiar el filtro cuando quieras. Tus páginas se guardan aunque cierres o recargues." : "Tap Edit to readjust corners or change the filter anytime. Your pages are saved even if you close or reload."}
+            {isZh ? "点击“编辑”可随时重新调整四角或更换滤镜。即使关闭或刷新页面，已扫描的页面也会保存在当前浏览器中。" : isEs ? "Pulsa Editar para reajustar esquinas o cambiar el filtro cuando quieras. Tus páginas se guardan aunque cierres o recargues." : "Tap Edit to readjust corners or change the filter anytime. Your pages are saved even if you close or reload."}
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
             {pages.map((pg, i) => (
@@ -1077,43 +1084,43 @@ export default function DocumentScanner({ locale = "es" }: Props) {
                 <img src={pg.thumb} alt={`page ${i + 1}`} className="block aspect-[3/4] w-full object-contain" />
                 <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 text-[10px] text-white">{i + 1}</span>
                 <div className="absolute right-1 top-1 flex gap-0.5">
-                  <button onClick={() => movePage(i, -1)} disabled={i === 0} title={isEs ? "Subir" : "Up"} className="rounded bg-black/55 p-1 text-white transition-colors hover:bg-black/80 disabled:opacity-30"><FiChevronUp size={13} /></button>
-                  <button onClick={() => movePage(i, 1)} disabled={i === pages.length - 1} title={isEs ? "Bajar" : "Down"} className="rounded bg-black/55 p-1 text-white transition-colors hover:bg-black/80 disabled:opacity-30"><FiChevronDown size={13} /></button>
+                  <button onClick={() => movePage(i, -1)} disabled={i === 0} title={isZh ? "上移" : isEs ? "Subir" : "Up"} className="rounded bg-black/55 p-1 text-white transition-colors hover:bg-black/80 disabled:opacity-30"><FiChevronUp size={13} /></button>
+                  <button onClick={() => movePage(i, 1)} disabled={i === pages.length - 1} title={isZh ? "下移" : isEs ? "Bajar" : "Down"} className="rounded bg-black/55 p-1 text-white transition-colors hover:bg-black/80 disabled:opacity-30"><FiChevronDown size={13} /></button>
                 </div>
                 <div className="grid grid-cols-5 border-t border-border/10 bg-surface/95">
-                  <button onClick={() => startEdit(pg.srcUrl, pg.corners, pg.filter, pg.id)} title={isEs ? "Editar (esquinas y filtro)" : "Edit (corners & filter)"} className="flex items-center justify-center py-2 text-primary transition-colors hover:bg-primary/10"><FiEdit2 size={15} /></button>
-                  <button onClick={() => rotateGalleryPage(pg)} title={isEs ? "Girar 90°" : "Rotate 90°"} className="flex items-center justify-center py-2 text-text-muted transition-colors hover:bg-primary/10 hover:text-primary"><FiRotateCw size={15} /></button>
-                  <button onClick={() => downloadPage(pg, i)} title={isEs ? "Descargar esta página" : "Download this page"} className="flex items-center justify-center py-2 text-text-muted transition-colors hover:bg-primary/10 hover:text-primary"><FiDownload size={15} /></button>
-                  <button onClick={() => runOcr(pg)} title={isEs ? "Extraer texto (OCR)" : "Extract text (OCR)"} className="flex items-center justify-center py-2 text-text-muted transition-colors hover:bg-primary/10 hover:text-primary"><FiFileText size={15} /></button>
-                  <button onClick={() => deletePage(pg.id)} title={isEs ? "Borrar" : "Delete"} className="flex items-center justify-center py-2 text-text-muted transition-colors hover:bg-red-500/15 hover:text-red-400"><FiTrash2 size={15} /></button>
+                  <button onClick={() => startEdit(pg.srcUrl, pg.corners, pg.filter, pg.id)} title={isZh ? "编辑（四角和滤镜）" : isEs ? "Editar (esquinas y filtro)" : "Edit (corners & filter)"} className="flex items-center justify-center py-2 text-primary transition-colors hover:bg-primary/10"><FiEdit2 size={15} /></button>
+                  <button onClick={() => rotateGalleryPage(pg)} title={isZh ? "旋转 90°" : isEs ? "Girar 90°" : "Rotate 90°"} className="flex items-center justify-center py-2 text-text-muted transition-colors hover:bg-primary/10 hover:text-primary"><FiRotateCw size={15} /></button>
+                  <button onClick={() => downloadPage(pg, i)} title={isZh ? "下载此页" : isEs ? "Descargar esta página" : "Download this page"} className="flex items-center justify-center py-2 text-text-muted transition-colors hover:bg-primary/10 hover:text-primary"><FiDownload size={15} /></button>
+                  <button onClick={() => runOcr(pg)} title={isZh ? "提取文字（OCR）" : isEs ? "Extraer texto (OCR)" : "Extract text (OCR)"} className="flex items-center justify-center py-2 text-text-muted transition-colors hover:bg-primary/10 hover:text-primary"><FiFileText size={15} /></button>
+                  <button onClick={() => deletePage(pg.id)} title={isZh ? "删除" : isEs ? "Borrar" : "Delete"} className="flex items-center justify-center py-2 text-text-muted transition-colors hover:bg-red-500/15 hover:text-red-400"><FiTrash2 size={15} /></button>
                 </div>
               </div>
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <button onClick={exportPdf} disabled={!!busy} className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/20 disabled:opacity-50">
-              <FiDownload /> {isEs ? "Descargar PDF" : "Download PDF"}
+              <FiDownload /> {isZh ? "下载 PDF" : isEs ? "Descargar PDF" : "Download PDF"}
             </button>
             <div className="flex items-center gap-1">
-              <span className="text-[11px] text-text-muted/60">{isEs ? "Tamaño:" : "Size:"}</span>
+              <span className="text-[11px] text-text-muted/60">{isZh ? "尺寸：" : isEs ? "Tamaño:" : "Size:"}</span>
               {(["auto", "a4", "letter"] as const).map((s) => (
                 <button key={s} disabled={searchablePdf} onClick={() => setPageSize(s)} className={`rounded-md border px-2 py-1 text-[11px] transition-colors disabled:opacity-40 ${pageSize === s ? "border-primary/50 bg-primary/15 text-primary" : "border-border/30 bg-surface/40 text-text-muted hover:text-text"}`}>
-                  {s === "auto" ? "Auto" : s === "a4" ? "A4" : (isEs ? "Carta" : "Letter")}
+                  {s === "auto" ? "Auto" : s === "a4" ? "A4" : (isZh ? "Letter（美国信纸）" : isEs ? "Carta" : "Letter")}
                 </button>
               ))}
             </div>
             <button onClick={exportImages} disabled={!!busy} className="flex items-center gap-2 rounded-xl border border-border/30 bg-surface/40 px-4 py-2.5 text-sm font-medium text-text-muted transition-colors hover:text-text disabled:opacity-50">
-              <FiDownload /> {pages.length > 1 ? (isEs ? "Imágenes (ZIP)" : "Images (ZIP)") : (isEs ? "Imagen" : "Image")}
+              <FiDownload /> {pages.length > 1 ? (isZh ? "图片（ZIP）" : isEs ? "Imágenes (ZIP)" : "Images (ZIP)") : (isZh ? "图片" : isEs ? "Imagen" : "Image")}
             </button>
             {busy && <span className="flex items-center gap-1.5 text-xs text-text-muted"><FiLoader className="animate-spin" /> {busy}</span>}
           </div>
           <label className="flex cursor-pointer items-center gap-1.5 text-xs text-text-muted">
             <input type="checkbox" checked={searchablePdf} onChange={(e) => setSearchablePdf(e.target.checked)} className="accent-primary" />
-            {isEs ? "PDF con texto buscable (OCR, más lento, tamaño automático)" : "Searchable-text PDF (OCR, slower, automatic size)"}
+            {isZh ? "生成可搜索 PDF（OCR，速度较慢，尺寸自动适配）" : isEs ? "PDF con texto buscable (OCR, más lento, tamaño automático)" : "Searchable-text PDF (OCR, slower, automatic size)"}
           </label>
           {pdfErr && <p className="text-xs text-red-400">{pdfErr}</p>}
           <label className="flex items-center gap-2 text-xs text-text-muted">
-            {isEs ? "Nombre del archivo:" : "File name:"}
+            {isZh ? "文件名：" : isEs ? "Nombre del archivo:" : "File name:"}
             <input
               type="text"
               value={scanName}
@@ -1130,28 +1137,30 @@ export default function DocumentScanner({ locale = "es" }: Props) {
     <div className="space-y-2 rounded-2xl border border-border/30 bg-surface/30 p-4">
       <div className="flex items-center justify-between">
         <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-muted/60">
-          <FiFileText /> {isEs ? "Texto extraído (OCR)" : "Extracted text (OCR)"}
+          <FiFileText /> {isZh ? "识别文字（OCR）" : isEs ? "Texto extraído (OCR)" : "Extracted text (OCR)"}
           {ocr.busy && <span className="text-primary">{ocr.prog}%</span>}
         </p>
         {!ocr.busy && ocr.text && (
           <button onClick={() => navigator.clipboard?.writeText(ocr.text)} className="flex items-center gap-1 text-xs text-text-muted transition-colors hover:text-primary">
-            <FiCopy /> {isEs ? "Copiar" : "Copy"}
+            <FiCopy /> {isZh ? "复制" : isEs ? "Copiar" : "Copy"}
           </button>
         )}
       </div>
       {ocr.busy
-        ? <p className="flex items-center gap-2 text-xs text-text-muted"><FiLoader className="animate-spin" /> {isEs ? "Reconociendo texto (la primera vez descarga el motor)…" : "Recognizing text (first run downloads the engine)…"}</p>
+        ? <p className="flex items-center gap-2 text-xs text-text-muted"><FiLoader className="animate-spin" /> {isZh ? "正在识别文字（首次使用会下载识别引擎）…" : isEs ? "Reconociendo texto (la primera vez descarga el motor)…" : "Recognizing text (first run downloads the engine)…"}</p>
         : <textarea readOnly value={ocr.text} className="h-40 w-full resize-y rounded-lg border border-border/30 bg-background/60 p-3 text-xs text-text" />}
     </div>
   );
 
   const howItWorksBlock = (
     <div className="space-y-2 rounded-xl border border-border/20 bg-surface/20 p-4 text-xs text-text-muted/70">
-      <p className="font-semibold text-text-muted">{isEs ? "Cómo funciona" : "How it works"}</p>
+      <p className="font-semibold text-text-muted">{isZh ? "使用说明" : isEs ? "Cómo funciona" : "How it works"}</p>
       <p>
-        {isEs
-          ? "Haz una foto del documento (o súbela), ajusta las 4 esquinas y se endereza con corrección de perspectiva para darle ese aspecto plano de escáner. Aplica un filtro (Mágico realza, B/N limpia sombras), escanea varias páginas y expórtalas a PDF o imágenes. Incluso extrae el texto con OCR. Todo en tu dispositivo, sin subir nada."
-          : "Take a photo of the document (or upload it), adjust the 4 corners and it's straightened with perspective correction for that flat scanner look. Apply a filter (Magic enhances, B&W cleans shadows), scan several pages and export to PDF or images. You can even extract the text with OCR. All on your device, nothing uploaded."}
+        {isZh
+          ? "拍摄文档或从相册上传，调整四角后即可通过透视校正还原平整的扫描效果。你可以使用滤镜（智能增强、黑白去阴影），连续扫描多页并导出 PDF 或图片，也可以使用 OCR 提取文字。所有处理都在设备本地完成，不会上传文件。"
+          : isEs
+            ? "Haz una foto del documento (o súbela), ajusta las 4 esquinas y se endereza con corrección de perspectiva para darle ese aspecto plano de escáner. Aplica un filtro (Mágico realza, B/N limpia sombras), escanea varias páginas y expórtalas a PDF o imágenes. Incluso extrae el texto con OCR. Todo en tu dispositivo, sin subir nada."
+            : "Take a photo of the document (or upload it), adjust the 4 corners and it's straightened with perspective correction for that flat scanner look. Apply a filter (Magic enhances, B&W cleans shadows), scan several pages and export to PDF or images. You can even extract the text with OCR. All on your device, nothing uploaded."}
       </p>
     </div>
   );
@@ -1190,10 +1199,10 @@ export default function DocumentScanner({ locale = "es" }: Props) {
           Camera tab's controls, so there was no way out while on Edit or
           Gallery short of tabbing back to Camera first. This is always here. */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/30 bg-surface/95 px-3 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] backdrop-blur-md">
-        <button onClick={stopCamera} aria-label={isEs ? "Salir del escáner" : "Exit scanner"} className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-colors hover:text-text">
+        <button onClick={stopCamera} aria-label={isZh ? "退出扫描" : isEs ? "Salir del escáner" : "Exit scanner"} className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full text-text-muted transition-colors hover:text-text">
           <FiArrowLeft size={19} />
         </button>
-        <span className="text-sm font-medium text-text">{isEs ? "Escáner de documentos" : "Document scanner"}</span>
+        <span className="text-sm font-medium text-text">{isZh ? "文档扫描" : isEs ? "Escáner de documentos" : "Document scanner"}</span>
       </div>
       <div ref={mobileScrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {/* showMobileShell only mounts this whole shell once cameraOn is
@@ -1207,8 +1216,8 @@ export default function DocumentScanner({ locale = "es" }: Props) {
                 this note just looks like detection silently stopped working. */}
             {editing && (
               <button onClick={() => setMobileTab("edit")} className="flex shrink-0 items-center justify-between gap-2 bg-amber-500/15 px-3 py-2 text-left text-xs text-amber-300">
-                <span>{isEs ? "Tienes una captura sin guardar — la detección está pausada." : "You have an unsaved capture — detection is paused."}</span>
-                <span className="shrink-0 font-semibold underline">{isEs ? "Ir a Editar" : "Go to Edit"}</span>
+                <span>{isZh ? "有一张拍摄的页面尚未保存，自动识别已暂停。" : isEs ? "Tienes una captura sin guardar — la detección está pausada." : "You have an unsaved capture — detection is paused."}</span>
+                <span className="shrink-0 font-semibold underline">{isZh ? "前往编辑" : isEs ? "Ir a Editar" : "Go to Edit"}</span>
               </button>
             )}
             <div className="min-h-0 flex-1">{cameraViewportMobile}</div>
@@ -1220,20 +1229,20 @@ export default function DocumentScanner({ locale = "es" }: Props) {
         )}
         {mobileTab === "edit" && (
           <div className="space-y-5 p-4 pb-8">
-            {editBlockContent ?? emptyState(isEs ? "No hay ninguna página en edición. Captura una en Cámara, o pulsa Editar en una página de la Galería." : "Nothing being edited right now. Capture one in Camera, or tap Edit on a page in Gallery.")}
+            {editBlockContent ?? emptyState(isZh ? "当前没有正在编辑的页面。请先在“摄像头”中拍摄，或在“图库”里点击某一页的“编辑”。" : isEs ? "No hay ninguna página en edición. Captura una en Cámara, o pulsa Editar en una página de la Galería." : "Nothing being edited right now. Capture one in Camera, or tap Edit on a page in Gallery.")}
           </div>
         )}
         {mobileTab === "gallery" && (
           <div className="space-y-5 p-4 pb-8">
-            {galleryBlockContent ?? emptyState(isEs ? "Aún no has escaneado ninguna página." : "You haven't scanned any pages yet.")}
+            {galleryBlockContent ?? emptyState(isZh ? "还没有扫描任何页面。" : isEs ? "Aún no has escaneado ninguna página." : "You haven't scanned any pages yet.")}
             {ocrBlockContent}
           </div>
         )}
       </div>
       <nav className="flex shrink-0 border-t border-border/30 bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
-        {tabBarButton("camera", <FiCamera size={18} />, isEs ? "Cámara" : "Camera")}
-        {tabBarButton("edit", <FiEdit2 size={18} />, isEs ? "Editar" : "Edit")}
-        {tabBarButton("gallery", <FiImage size={18} />, isEs ? "Galería" : "Gallery", pages.length)}
+        {tabBarButton("camera", <FiCamera size={18} />, isZh ? "摄像头" : isEs ? "Cámara" : "Camera")}
+        {tabBarButton("edit", <FiEdit2 size={18} />, isZh ? "编辑" : isEs ? "Editar" : "Edit")}
+        {tabBarButton("gallery", <FiImage size={18} />, isZh ? "图库" : isEs ? "Galería" : "Gallery", pages.length)}
       </nav>
     </div>
   );
