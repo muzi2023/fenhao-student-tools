@@ -37,11 +37,12 @@
     "a11y": {
       "primary": "主导航",
       "mobilePrimary": "移动端主导航"
-    }
+    },
+    "documentScanner": "文档扫描"
   },
   "Home": {
     "heroTitle": "智能证件照处理，一次搞定",
-    "heroSubtitle": "Pixfit 是浏览器内运行的 AI 证件照工具：AI 一键抠图、智能换背景、智能裁剪到证件 / 签证规格、自动排版与压缩到指定大小——全程本地处理，照片不上传。",
+    "heroSubtitle": "Pixfit 是一款直接在浏览器中运行的证件照工具。可一键抠图、换背景、按证件或签证规格裁剪，并自动排版、压缩文件。全程在本地处理，照片不会上传。",
     "metaTitle": "Pixfit · 免费在线证件照工具 · 浏览器内 AI 抠图换背景 · 不上传 2026 | Pixfit",
     "metaDescription": "免费在线证件照工具，浏览器内 AI 一键抠图、换背景、智能裁剪到签证 / 护照 / 身份证规格，含 AI 证件扫描成 A4 PDF。照片不上传，2026 全新规格。",
     "metaKeywords": [
@@ -80,7 +81,7 @@
       },
       "compress": {
         "title": "精准压缩",
-        "desc": "二分搜索压到指定大小区间，满足上传要求。"
+        "desc": "自动压缩到指定文件大小，满足上传要求。"
       }
     },
     "uploadDropzone": {
@@ -107,11 +108,11 @@
         },
         "sizes": {
           "q": "支持哪些国家和证件的尺寸？",
-          "a": "Pixfit 内置 28 条规格：中国身份证 / 1 寸 / 2 寸 / 护照、港澳台通行证、14 项主流签证（美国 / 申根 / 英国 / 加拿大 / 澳新 / 日韩 / 东南亚 / 俄罗斯 / 印度），以及国家公务员、考研、计算机等级三项中国考试报名。"
+          "a": "Pixfit 内置 28 种常用规格：中国身份证 / 1 寸 / 2 寸 / 护照、港澳台通行证、14 项主流签证（美国 / 申根 / 英国 / 加拿大 / 澳新 / 日韩 / 东南亚 / 俄罗斯 / 印度），以及国家公务员、考研、计算机等级三项中国考试报名。"
         },
         "compress": {
           "q": "可以压缩证件照到 30KB / 50KB 等指定大小吗？",
-          "a": "可以。导出面板的「压缩到指定 KB」会自动二分搜索 JPG / WebP 质量，必要时缩小像素，命中目标 ±5% 区间，满足公务员考试、签证申请等文件大小限制。"
+          "a": "可以。导出面板的“压缩到指定 KB”会自动调整图片质量和分辨率，尽量接近目标大小（误差约 ±5%），满足公务员考试、签证申请等文件大小限制。"
         },
         "print": {
           "q": "如何把多张证件照排到 A4 或 5 寸 / 6 寸相纸上打印？",
@@ -136,7 +137,7 @@
     "copy": "© {year} Pixfit · 像配",
     "privacy": "隐私政策",
     "terms": "服务条款",
-    "openSource": "开源 (MIT)",
+    "openSource": "开源（MIT）",
     "tagline": "浏览器内的证件照工作台",
     "groups": {
       "studio": "工作台",
@@ -173,7 +174,7 @@
   },
   "Studio": {
     "title": "工作台",
-    "subtitle": "上传一张人像，AI 智能抠图、智能裁剪、AI 一键换背景、自动拼版与按 KB 压缩，全程浏览器内完成。",
+    "subtitle": "上传一张人像，即可完成抠图、换背景、按证件规格裁剪、自动排版和文件压缩；全部在浏览器本地完成。",
     "metaTitle": "Pixfit 工作台 · 在线裁剪 · 换背景 · 压缩 · 拼版打印 2026 | Pixfit",
     "metaDescription": "Pixfit 工作台：在线裁剪、AI 一键换背景、按 KB 压缩、A4 / 5R / 6R 拼版打印，免费浏览器内运行，照片不上传。2026 支持 28 种证件规格。",
     "metaKeywords": [
@@ -203,7 +204,7 @@
     },
     "empty": {
       "title": "还没有照片",
-      "subtitle": "上传一张人像以开始"
+      "subtitle": "上传一张照片即可开始"
     },
     "actions": {
       "replace": "换一张照片",
@@ -236,7 +237,7 @@
     },
     "intent": {
       "title": "想做什么？",
-      "subtitle": "选一个动作开始，也可以从顶部 tab 自由切换。",
+      "subtitle": "选一个动作开始，也可以从顶部步骤栏 自由切换。",
       "dismiss": "关闭",
       "choices": {
         "background": {
@@ -265,8 +266,8 @@
   },
   "Crop": {
     "title": "照片规格",
-    "subtitle": "选择规格后自动按比例裁剪并居中头部",
-    "search": "搜索规格 (如 美国签证、申根、二寸)",
+    "subtitle": "选择规格后会自动按比例裁剪，并调整头部位置",
+    "search": "搜索规格（如：美国签证、申根签证、二寸）",
     "noMatches": "没有匹配的规格",
     "customSection": "自定义尺寸",
     "customUnit": "单位",
@@ -318,7 +319,7 @@
     },
     "detect": {
       "failed": "人脸检测失败，请手动调整裁剪框",
-      "noFace": "未检测到人脸 · 将按比例居中裁剪",
+      "noFace": "未检测到人脸，将按比例居中裁剪",
       "autoCentered": "已自动居中。需要时可拖动裁剪框微调位置。"
     },
     "warnings": {
@@ -330,14 +331,14 @@
       "face-not-found": "未检测到人脸，无法做构图检查",
       "moreCount": "还有 {count} 项"
     },
-    "bgSuggested": "{name} 推荐使用规格建议的背景色",
-    "bgSuggestedAction": "采用"
+    "bgSuggested": "{name} 建议使用该规格要求的背景色",
+    "bgSuggestedAction": "使用此颜色"
   },
   "Background": {
     "title": "背景颜色",
     "cutout": {
       "title": "先抠图再换背景",
-      "hint": "更换背景颜色需要先把人像抠出来。可以现在开始抠图，也可以先选好颜色，抠图完成后会自动套用。",
+      "hint": "换背景前需要先抠出人像。现在开始抠图，也可以先选颜色，抠图完成后会自动应用。",
       "start": "开始抠图",
       "running": "抠图中…"
     },
@@ -346,12 +347,12 @@
     "recent": "最近使用",
     "recentEmpty": "暂无最近使用",
     "compare": "对比预览",
-    "compareHint": "拖动滑块对比换背景前后",
+    "compareHint": "拖动滑块查看换背景前后的效果",
     "retry": {
       "hint": "效果不理想？",
       "action": "重新抠图"
     },
-    "hexInputLabel": "十六进制颜色",
+    "hexInputLabel": "颜色值（十六进制）",
     "hexInputPlaceholder": "#FFFFFF",
     "apply": "应用",
     "presetNames": {
@@ -379,11 +380,11 @@
     "format": {
       "label": "格式",
       "png-alpha": "PNG · 透明背景",
-      "png-flat": "PNG · 实底背景",
+      "png-flat": "PNG · 纯色背景",
       "jpg": "JPG",
       "webp": "WebP"
     },
-    "quality": "编码质量",
+    "quality": "图片质量",
     "qualityMax": "最高质量",
     "qualityMaxHint": "JPG / WebP 在最高质量下仍为有损压缩；如需完全无损请选 PNG。",
     "estimateLabel": "预计大小 ~{kb} KB",
@@ -399,12 +400,12 @@
     "qualityLockedByCompress": "压缩到指定大小时质量由算法自动选择",
     "compressToKB": "压缩到指定 KB",
     "compressUnsupported": "压缩仅对 JPG / WebP 有效",
-    "kbHint": "二分搜索质量并按需缩小像素，命中目标 ±5% 区间",
+    "kbHint": "自动调整图片质量和分辨率，尽量接近目标大小（误差约 ±5%）",
     "compressMiss": "最接近的结果为 {kb} KB，可尝试增大目标或继续缩小像素",
     "alphaNeedsCutout": "PNG 透明背景需要先抠图",
     "alphaCutoutHint": "想导出透明背景？需要先把人像抠出来。",
     "alphaGoToBackground": "去背景面板开始抠图 →",
-    "cropAppliedHint": "已按照当前尺寸裁剪 — 修改尺寸可回到尺寸 tab。",
+    "cropAppliedHint": "已按照当前尺寸裁剪 — 修改尺寸可回到尺寸 尺寸步骤。",
     "downloadFailed": "未能生成文件，请尝试其他格式",
     "downloadSuccess": "已保存 {filename}",
     "filenamePreview": "文件名",
@@ -416,8 +417,8 @@
       "copying": "正在复制…"
     },
     "hint": {
-      "alpha": "支持 alpha 通道的格式将保留透明背景",
-      "flat": "实底格式会把当前背景色烘焙到导出图像中"
+      "alpha": "支持 透明通道的格式将保留透明背景",
+      "flat": "纯色背景格式会把当前背景色烘焙到导出图像中"
     },
     "copied": "已复制到剪贴板",
     "copyFailed": "复制失败，请尝试下载",
@@ -430,7 +431,7 @@
     "list": {
       "heading": "相纸规格库",
       "subtitle": "Pixfit 内置的冲印店常用相纸，可在工作台一键将照片自动拼版。",
-      "intro": "从 3R 到 A4，七张内置相纸覆盖中国冲印店常见格式与办公打印机。所有尺寸均按 300 DPI 校准，所见即所得。",
+      "intro": "从 3R 到 A4，7 种常用相纸规格覆盖中国冲印店常见格式与办公打印机。所有尺寸均按 300 DPI 校准，打印效果与预览一致。",
       "fields": {
         "alias": "别名",
         "dimensions": "尺寸",
