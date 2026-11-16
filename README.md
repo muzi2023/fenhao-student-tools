@@ -152,6 +152,7 @@ Every public route is statically generated under `/[locale]/...` for all 13 loca
 | `/`                  | Home · landing + upload                                                  |
 | `/studio`            | Studio · cutout / background / crop / layout / export (supports `?tab=`) |
 | `/scanner`           | **Sub-product** · Document Scan Generator                                |
+| `/document-scanner`  | **Standalone camera scanner** · auto corners, multi-page PDF, OCR       |
 | `/scanner/[docType]` | DocSpec SEO landing page (12 × 13 = 156 SSG pages)                       |
 | `/sizes`             | All 28 built-in photo specs (SEO index)                                  |
 | `/sizes/[specId]`    | Per-spec detail (with HowTo / FAQ JSON-LD)                               |
