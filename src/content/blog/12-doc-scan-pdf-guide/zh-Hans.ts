@@ -102,7 +102,7 @@ export const article: ArticleBody = {
         },
         {
           type: 'p',
-          text: '若目标平台有严格的文件体积上限（银行常见 2 MB，部分政务平台要求 500 KB 以内），导出 PDF 后再到 Studio 的导出页跑一遍 Pixfit 的压缩流程。/compress/[target] 系列页面提供了 50 KB / 100 KB / 200 KB / 500 KB / 1 MB 的预设。',
+          text: '若目标平台有严格的文件体积上限（银行常见 2 MB，部分政务平台要求 500 KB 以内），导出 PDF 后再到工作台的“导出”页跑一遍 Pixfit 的压缩流程。/compress/[target] 系列页面提供了 50 KB / 100 KB / 200 KB / 500 KB / 1 MB 的预设。',
         },
       ],
     },
