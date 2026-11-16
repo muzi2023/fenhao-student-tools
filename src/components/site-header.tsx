@@ -13,6 +13,7 @@ export function SiteHeader() {
   const navItems = [
     { href: '/studio', label: t('studio') },
     { href: '/scanner', label: t('scanner') },
+    { href: '/document-scanner', label: t('documentScanner') },
     { href: '/sizes', label: t('sizes') },
     { href: '/paper', label: t('paper') },
     { href: '/templates', label: t('templates') },
