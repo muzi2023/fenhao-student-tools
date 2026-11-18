@@ -1,0 +1,2163 @@
+:root {
+  --pack-color: #1e38dc;
+  --pack-highlight: #7ba2ff;
+  --pack-shadow: #081042;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring-css: linear(
+    0, 0.055, 0.193, 0.378, 0.577, 0.767, 0.93, 1.056, 1.142, 1.19, 1.205,
+    1.195, 1.167, 1.13, 1.089, 1.05, 1.016, 0.99, 0.972, 0.961, 0.958,
+    0.96, 0.965, 0.973, 0.981, 0.989, 0.996, 1.002, 1.006, 1.008, 1
+  );
+
+  /* 卡包比例 0.69:1，内部卡牌比例 5:7 且略窄于袋宽 */
+  --pack-h: min(410px, 52vh, 52svh, 110vw);
+  --pack-w: calc(var(--pack-h) * 0.69);
+  --card-w: calc(var(--pack-w) * 0.84);
+  --card-h: calc(var(--card-w) * 1.4);
+  --crimp-h: calc(var(--pack-h) * 0.068);
+  --pack-depth: 16px;
+
+  /* SimpleMkt 品牌设计视觉变量 */
+  --smkt-green: #1A6B3A;
+  --smkt-green-hover: #155830;
+  --smkt-green-luminous: #32ad62;
+  --focus-ring: #32ad62;
+  --font-ui: "Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-display: "Noto Serif SC", "Songti SC", STSong, serif;
+  --font-mono: "Berkeley Mono", "JetBrains Mono", "Fira Code", "SFMono-Regular", Consolas, monospace;
+
+  /* 默认：SimpleMkt 暗色建筑光学玻璃展厅 */
+  --stage-bg: #070b09;
+  --stage-vignette-bg:
+    radial-gradient(62% 52% at 50% 48%, transparent 32%, rgba(5, 9, 8, 0.56) 100%),
+    linear-gradient(180deg, rgba(5, 9, 8, 0.52) 0%, transparent 22%, transparent 74%, rgba(5, 9, 8, 0.68) 100%);
+  --spotlight-bg:
+    conic-gradient(
+      from 162deg at 50% -16%,
+      transparent 0deg,
+      rgba(50, 173, 98, 0.05) 13deg,
+      rgba(244, 250, 246, 0.11) 19deg,
+      rgba(50, 173, 98, 0.05) 25deg,
+      transparent 38deg
+    ),
+    radial-gradient(46% 36% at 50% 42%, rgba(210, 238, 222, 0.08), transparent 76%);
+  --ground-shadow-bg:
+    radial-gradient(closest-side, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.36) 56%, transparent);
+  --grain-opacity: 0.028;
+
+  --chrome-surface: rgba(13, 18, 16, 0.78);
+  --chrome-border: rgba(255, 255, 255, 0.11);
+  --chrome-specular: rgba(255, 255, 255, 0.16);
+  --chrome-sep: rgba(255, 255, 255, 0.1);
+  --chrome-ink: #f4f5f3;
+  --chrome-muted: rgba(226, 232, 228, 0.6);
+  --chrome-hover: rgba(255, 255, 255, 0.065);
+  --chrome-shadow:
+    0 20px 44px -12px rgba(0, 0, 0, 0.68),
+    0 4px 12px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 var(--chrome-specular);
+
+  --cta-primary-bg: linear-gradient(180deg, #218047 0%, #1A6B3A 100%);
+  --cta-primary-ink: #ffffff;
+  --cta-primary-border: rgba(120, 224, 160, 0.36);
+  --cta-secondary-bg: rgba(255, 255, 255, 0.08);
+  --cta-secondary-ink: #f4f5f3;
+  --cta-secondary-border: rgba(255, 255, 255, 0.15);
+
+  --holo-rainbow: repeating-linear-gradient(
+    112deg,
+    #ff75a8 0%,
+    #ffd166 5%,
+    #9eff87 10%,
+    #66e3ff 15%,
+    #9c8aff 20%,
+    #ff75a8 25%
+  );
+  --holo-glitter: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='156' height='156'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.82' seed='11' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 14 0 0 0 -8.5'/></filter><rect width='156' height='156' filter='url(%23n)'/></svg>");
+  --stage-noise: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='2' stitchTiles='stitch'/></filter><rect width='180' height='180' filter='url(%23g)'/></svg>");
+}
+
+/* 白昼建筑光学玻璃展台（SimpleMkt 亮色主题） */
+html[data-studio-light="day"] {
+  --focus-ring: #1A6B3A;
+  --stage-bg: #f3f4f3;
+  --stage-vignette-bg:
+    radial-gradient(70% 58% at 50% 46%, rgba(255, 255, 255, 0.24) 0%, rgba(235, 238, 235, 0.42) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, transparent 20%, transparent 76%, rgba(226, 230, 226, 0.55) 100%);
+  --spotlight-bg:
+    radial-gradient(56% 40% at 50% 24%, rgba(255, 255, 255, 0.72), transparent 76%);
+  --ground-shadow-bg:
+    radial-gradient(closest-side, rgba(20, 26, 22, 0.32), rgba(20, 26, 22, 0.1) 58%, transparent);
+  --grain-opacity: 0.018;
+
+  --chrome-surface: rgba(255, 255, 255, 0.86);
+  --chrome-border: #D8D8D6;
+  --chrome-specular: rgba(255, 255, 255, 0.94);
+  --chrome-sep: #EBEBEA;
+  --chrome-ink: #141414;
+  --chrome-muted: #6B6B6B;
+  --chrome-hover: #F3F4F3;
+  --chrome-shadow:
+    0 16px 36px -12px rgba(20, 24, 20, 0.12),
+    0 2px 8px rgba(20, 24, 20, 0.05),
+    inset 0 1px 0 var(--chrome-specular);
+
+  --cta-primary-bg: linear-gradient(180deg, #1e7841 0%, #1A6B3A 100%);
+  --cta-primary-ink: #ffffff;
+  --cta-primary-border: rgba(255, 255, 255, 0.24) ;
+  --cta-secondary-bg: #F3F4F3;
+  --cta-secondary-ink: #141414;
+  --cta-secondary-border: #D8D8D6;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+html {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow: hidden;
+  background: var(--stage-bg);
+  color: var(--chrome-ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.35s var(--ease-out), color 0.25s var(--ease-out);
+}
+
+i {
+  font-style: normal;
+}
+
+button {
+  font: inherit;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- 顶部居中 SimpleMkt 获批品牌字标 + 右上角工具簇 ---------- */
+.top-bar {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  left: 20px;
+  right: 20px;
+  min-height: 42px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.brand-stage-crest {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: opacity 0.18s var(--ease-out);
+}
+
+.brand-stage-crest:hover {
+  opacity: 0.88;
+}
+
+.brand-stage-crest:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+}
+
+.brand-wordmark {
+  display: block;
+  height: clamp(26px, 3.3vh, 35px);
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 12px rgba(0, 0, 0, 0.28));
+}
+
+html[data-studio-light="day"] .brand-wordmark {
+  filter: none;
+}
+
+html[data-studio-light="dark"] .brand-wordmark-light,
+html[data-studio-light="day"] .brand-wordmark-dark {
+  display: none;
+}
+
+.utility-cluster {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--chrome-surface);
+  border: 1px solid var(--chrome-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--chrome-shadow);
+}
+
+.util-btn {
+  -webkit-tap-highlight-color: transparent;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--chrome-ink);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background-color 0.18s var(--ease-out), scale 0.16s var(--ease-out);
+}
+
+.util-btn.mute-btn {
+  width: 32px;
+  padding: 0;
+}
+
+.util-btn:active {
+  scale: 0.94;
+}
+
+.util-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+html[data-studio-light="dark"] .icon-daylight,
+html[data-studio-light="day"] .icon-darkroom {
+  display: none;
+}
+
+.mute-btn .icon-sound-off,
+.mute-btn[aria-pressed="true"] .icon-sound-on {
+  display: none;
+}
+
+.mute-btn[aria-pressed="true"] .icon-sound-off {
+  display: block;
+}
+
+/* ---------- 高罕出货横幅 ---------- */
+.pull-banner {
+  position: fixed;
+  left: 50%;
+  top: 74px;
+  z-index: 28;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  max-width: calc(100vw - 28px);
+  padding: 9px 22px 11px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(16, 22, 19, 0.94), rgba(9, 13, 11, 0.96));
+  border: 1px solid rgba(236, 198, 108, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #fff6dc;
+  white-space: nowrap;
+  box-shadow:
+    0 18px 40px -10px rgba(0, 0, 0, 0.65),
+    0 0 28px -6px rgba(255, 198, 76, 0.35),
+    inset 0 1px 0 rgba(255, 240, 196, 0.35);
+  pointer-events: none;
+  animation: banner-pop 0.42s var(--spring-css);
+}
+
+.pull-banner[hidden] {
+  display: none;
+}
+
+.banner-kicker {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: #f5ca69;
+}
+
+.banner-title {
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+@keyframes banner-pop {
+  from {
+    opacity: 0;
+    scale: 0.84;
+    translate: -50% -10px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: -50% 0;
+  }
+}
+
+/* ---------- 建筑光学玻璃三维舞台、底图与胶片微噪点 ---------- */
+.stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  perspective: 1400px;
+  perspective-origin: 50% 40%;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.stage-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.stage-backdrop-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 54%;
+  transition: opacity 0.42s var(--ease-out);
+}
+
+html[data-studio-light="dark"] .stage-backdrop-light,
+html[data-studio-light="day"] .stage-backdrop-dark {
+  opacity: 0;
+}
+
+html[data-studio-light="dark"] .stage-backdrop-dark {
+  opacity: 0.94;
+}
+
+html[data-studio-light="day"] .stage-backdrop-light {
+  opacity: 0.96;
+}
+
+.stage-vignette {
+  position: absolute;
+  inset: 0;
+  background: var(--stage-vignette-bg);
+}
+
+.stage-spotlight {
+  position: absolute;
+  inset: 0;
+  background: var(--spotlight-bg);
+  pointer-events: none;
+  transition: opacity 0.35s var(--ease-out);
+}
+
+.stage-grain {
+  position: absolute;
+  inset: 0;
+  background: var(--stage-noise) 0 0 / 180px 180px repeat;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+.stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+
+.stage.impact-ultra {
+  animation: stage-impact-sm 260ms var(--ease-out);
+}
+
+.stage.impact-ultra::after {
+  background: radial-gradient(48% 42% at 50% 48%, rgba(255, 212, 84, 0.24), rgba(50, 173, 98, 0.08) 52%, transparent 78%);
+  animation: stage-flare 440ms var(--ease-out);
+}
+
+.stage.impact-secret {
+  animation: stage-impact-lg 380ms var(--ease-out);
+}
+
+.stage.impact-secret::after {
+  background: radial-gradient(56% 48% at 50% 48%, rgba(255, 224, 128, 0.34), rgba(255, 92, 214, 0.18) 42%, rgba(92, 230, 255, 0.1) 66%, transparent 84%);
+  animation: stage-flare 580ms var(--ease-out);
+}
+
+@keyframes stage-flare {
+  0% { opacity: 0.96; }
+  100% { opacity: 0; }
+}
+
+@keyframes stage-impact-sm {
+  0%, 100% { translate: 0 0; }
+  25% { translate: -4px 3px; }
+  55% { translate: 4px -2px; }
+  80% { translate: -2px 1px; }
+}
+
+@keyframes stage-impact-lg {
+  0%, 100% { translate: 0 0; }
+  18% { translate: -7px 5px; }
+  38% { translate: 7px -4px; }
+  60% { translate: -5px -2px; }
+  82% { translate: 3px 2px; }
+}
+
+.pack-aura {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  width: calc(var(--pack-w) * 1.56);
+  height: calc(var(--pack-h) * 1.28);
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--peek-aura, rgba(255, 196, 56, 0.58)), transparent 74%);
+  filter: blur(22px);
+  opacity: 0;
+  scale: 0.86;
+  pointer-events: none;
+  transition: opacity 0.38s var(--ease-out), scale 0.45s var(--ease-out);
+}
+
+.pack-aura.active {
+  opacity: 0.92;
+  scale: 1.05;
+}
+
+.pack-aura.god-mode {
+  --peek-aura: rgba(255, 198, 64, 0.65);
+  opacity: 0.76;
+  scale: 1;
+  animation: aura-breathe 2.2s ease-in-out infinite;
+}
+
+@keyframes aura-breathe {
+  50% {
+    opacity: 0.98;
+    scale: 1.09;
+  }
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.scene.flat {
+  transform-style: flat;
+  perspective: 1400px;
+  perspective-origin: 50% 40%;
+}
+
+.grab-zone,
+.card {
+  pointer-events: auto;
+}
+
+.pack,
+.card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.pack {
+  width: var(--pack-w);
+  height: var(--pack-h);
+  margin: calc(var(--pack-h) / -2) 0 0 calc(var(--pack-w) / -2);
+}
+
+.ground-shadow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--pack-w) * 1.02);
+  height: calc(var(--pack-w) * 0.2);
+  margin: calc(var(--pack-w) * -0.1) 0 0 calc(var(--pack-w) * -0.51);
+  border-radius: 50%;
+  background: var(--ground-shadow-bg);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+/* ---------- 镀铝复合膜补充包（热压锯齿 + 激光易撕口 + 枕式金属漫反射） ---------- */
+.pouch-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(calc(var(--pack-depth) / 2));
+  --tooth-w: calc(var(--pack-w) / 28);
+  background:
+    var(--foil-shade, none) 0 0 / 100% 100%,
+    /* 上下热压封口内侧立体压痕亮线 */
+    linear-gradient(180deg, rgba(0, 0, 0, 0.42) 0 1px, rgba(255, 255, 255, 0.34) 1px 2px, transparent 3px) 0 var(--crimp-h) / 100% 5px no-repeat,
+    linear-gradient(0deg, rgba(0, 0, 0, 0.46) 0 1px, rgba(255, 255, 255, 0.26) 1px 2px, transparent 3px) 0 calc(100% - var(--crimp-h)) / 100% 5px no-repeat,
+    /* 上下封口精密金属压纹槽 */
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.34) 0 1.2px,
+      rgba(255, 255, 255, 0.22) 1.2px 2.4px,
+      rgba(0, 0, 0, 0.08) 2.4px 4.6px
+    ) 0 0 / 100% var(--crimp-h) no-repeat,
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.34) 0 1.2px,
+      rgba(255, 255, 255, 0.2) 1.2px 2.4px,
+      rgba(0, 0, 0, 0.08) 2.4px 4.6px
+    ) 0 100% / 100% var(--crimp-h) no-repeat,
+    /* 袋身左右弧面体积边缘光与暗部转折 */
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.36) 0%,
+      rgba(255, 255, 255, 0.24) 3.4%,
+      transparent 10%,
+      transparent 88%,
+      rgba(255, 255, 255, 0.12) 94.5%,
+      rgba(0, 0, 0, 0.44) 100%
+    ) 0 50% / 100% calc(100% - 2 * var(--crimp-h)) no-repeat,
+    /* 极细拉丝镀铝膜纵纹 */
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.026) 0 1px, transparent 1px 3px),
+    /* 枕式鼓包中心金属高光与四角收紧暗角 */
+    radial-gradient(
+      78% 56% at calc(44% + var(--glint-x, 0) * 3%) 47%,
+      color-mix(in srgb, var(--pack-highlight) 58%, #ffffff) 0%,
+      color-mix(in srgb, var(--pack-color) 82%, var(--pack-highlight)) 34%,
+      var(--pack-color) 68%,
+      var(--pack-shadow) 100%
+    );
+  /* 含两侧 y=11.4% 激光 V 型易撕缺口的包装袋轮廓遮罩 */
+  mask:
+    conic-gradient(from 135deg at 50% 0, transparent, #000 1deg 89deg, transparent 90deg) 0 0 / var(--tooth-w) calc(var(--tooth-w) / 2) repeat-x,
+    url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M0 0H100V5.6C100 8 97.6 7.6 97.6 10V10.6L95.3 11.4L97.6 12.2V90C97.6 92.4 100 92 100 94.4V100H0V94.4C0 92 2.4 92.4 2.4 90V12.2L4.7 11.4L2.4 10.6V10C2.4 7.6 0 8 0 5.6Z'/></svg>") 0 50% / 100% calc(100% - var(--tooth-w)) no-repeat,
+    conic-gradient(from -45deg at 50% 100%, transparent, #000 1deg 89deg, transparent 90deg) 0 100% / var(--tooth-w) calc(var(--tooth-w) / 2) repeat-x;
+}
+
+.pouch-face.back {
+  transform: rotateY(180deg) translateZ(calc(var(--pack-depth) / 2));
+}
+
+.pouch-face::before,
+.pouch-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 随倾角游走的宽幅金属镜面反光带 */
+.pouch-face::before {
+  background: linear-gradient(
+    108deg,
+    transparent 16%,
+    rgba(255, 255, 255, 0.08) 28%,
+    rgba(255, 255, 255, 0.34) 36%,
+    rgba(255, 255, 255, 0.08) 44%,
+    transparent 56%
+  );
+  mask: linear-gradient(transparent 6%, #000 13% 87%, transparent 94%);
+  translate: calc(var(--glint-x, 0) * 6%) 0;
+  opacity: var(--glint-op, 0.82);
+  mix-blend-mode: soft-light;
+}
+
+.pouch-face::after {
+  background: var(--foil-shine, none) 0 0 / 100% 100%;
+  opacity: var(--shine-op, 0.88);
+  mask: linear-gradient(90deg, rgba(0, 0, 0, 0.45), #000 40% 60%, rgba(0, 0, 0, 0.45)) calc(var(--shine-pos, 50) * 1%) 0 / 250% 100%;
+}
+
+/* 欧皇全闪包：黑金幻彩镀膜外袋 */
+.pack.god-pack .pouch-face {
+  background:
+    var(--foil-shade, none) 0 0 / 100% 100%,
+    linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0 1px, rgba(255, 232, 160, 0.5) 1px 2px, transparent 3px) 0 var(--crimp-h) / 100% 5px no-repeat,
+    linear-gradient(0deg, rgba(0, 0, 0, 0.48) 0 1px, rgba(255, 232, 160, 0.4) 1px 2px, transparent 3px) 0 calc(100% - var(--crimp-h)) / 100% 5px no-repeat,
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.38) 0 1.2px, rgba(255, 226, 138, 0.32) 1.2px 2.4px, transparent 2.4px 4.6px) 0 0 / 100% var(--crimp-h) no-repeat,
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.38) 0 1.2px, rgba(255, 226, 138, 0.32) 1.2px 2.4px, transparent 2.4px 4.6px) 0 100% / 100% var(--crimp-h) no-repeat,
+    linear-gradient(128deg, rgba(255, 218, 106, 0.45) 0%, rgba(255, 108, 214, 0.25) 38%, rgba(92, 224, 255, 0.28) 68%, rgba(255, 214, 102, 0.5) 100%),
+    radial-gradient(80% 58% at 45% 46%, #3d3159 0%, #1c172e 58%, #0b0914 100%);
+}
+
+.gusset-slice {
+  position: absolute;
+}
+
+/* ---------- 袋口彩虹喷流 ---------- */
+.jet-anchor {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--pack-w);
+  height: var(--pack-h);
+  margin: calc(var(--pack-h) / -2) 0 0 calc(var(--pack-w) / -2);
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.light-jet {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  top: calc(10.5% - var(--pack-w) * 0.6);
+  height: calc(var(--pack-w) * 0.76);
+  overflow: visible;
+  opacity: 0;
+  transform: translateZ(-6px);
+}
+
+/* ---------- 补充包工业级烫金/丝印版式 ---------- */
+.tear-label {
+  position: absolute;
+  left: 8.5%;
+  right: 8.5%;
+  top: calc(var(--crimp-h) + 1.1%);
+  font: 700 calc(var(--pack-w) * 0.028) / 1 system-ui, sans-serif;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.tear-guide {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  top: 11.4%;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.52) 0 4px, transparent 4px 7px);
+}
+
+/* 袋面金属内框（位于 y=20.2% 以下，避开顶部动态撕裂带） */
+.pouch-foil-frame {
+  position: absolute;
+  left: 7.5%;
+  right: 7.5%;
+  top: 20.2%;
+  bottom: calc(var(--crimp-h) + 2.8%);
+  border-radius: calc(var(--pack-w) * 0.032);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 26%, rgba(0, 0, 0, 0.18) 100%);
+  pointer-events: none;
+}
+
+.pouch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6.5% 7% 0;
+}
+
+.brand-mark {
+  font: 800 calc(var(--pack-w) * 0.105) / 0.95 -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #ffffff 15%, rgba(230, 238, 255, 0.82) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.32));
+}
+
+.edition-tag {
+  padding: calc(var(--pack-w) * 0.014) calc(var(--pack-w) * 0.028);
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  background: rgba(8, 12, 28, 0.34);
+  font: 700 calc(var(--pack-w) * 0.027) / 1 system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+  font-variant-numeric: tabular-nums;
+}
+
+.pack.god-pack .edition-tag {
+  border-color: rgba(255, 218, 118, 0.72);
+  background: rgba(34, 24, 8, 0.62);
+  color: #ffe699;
+}
+
+/* 吉祥物背后的精密星轨金属环，让角色融于包装主视觉 */
+.pouch-halo-ring {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 74%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 0 22px rgba(255, 255, 255, 0.12),
+    0 0 0 5px rgba(255, 255, 255, 0.04);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, transparent 68%);
+}
+
+.pouch-footer {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: calc(var(--crimp-h) + 4.6%);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--pack-w) * 0.016);
+  pointer-events: none;
+}
+
+.pouch-foot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: calc(var(--pack-w) * 0.015);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.pack-foot {
+  font: 700 calc(var(--pack-w) * 0.031) / 1 system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pack-micro-spec {
+  font: 600 calc(var(--pack-w) * 0.023) / 1 system-ui, sans-serif;
+  letter-spacing: 0.15em;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* 补充包背面中封鳍片与印刷信息 */
+.back-fin {
+  position: absolute;
+  left: 44.5%;
+  width: 11%;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  background:
+    repeating-linear-gradient(rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 4px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.36), rgba(255, 255, 255, 0.22) 45%, rgba(0, 0, 0, 0.28));
+}
+
+.back-print-box {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 22%;
+  padding: 8% 6%;
+  border-radius: calc(var(--pack-w) * 0.028);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(6, 10, 24, 0.22);
+  text-align: center;
+}
+
+.back-mark {
+  display: block;
+  font-size: calc(var(--pack-w) * 0.088);
+  margin-bottom: calc(var(--pack-w) * 0.035);
+}
+
+.back-blurb {
+  margin: 0 0 calc(var(--pack-w) * 0.04);
+  font: 500 calc(var(--pack-w) * 0.038) / 1.55 system-ui, sans-serif;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.back-spec {
+  display: block;
+  font: 600 calc(var(--pack-w) * 0.022) / 1.2 system-ui, sans-serif;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.back-barcode {
+  position: absolute;
+  left: 28%;
+  right: 28%;
+  bottom: calc(var(--crimp-h) + 6%);
+  height: 9.2%;
+  padding: 5px 8px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #101218 0 2px, transparent 2px 3px,
+      #101218 3px 4px, transparent 4px 7px,
+      #101218 7px 10px, transparent 10px 12px
+    ) content-box,
+    rgba(255, 255, 255, 0.94);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+}
+
+/* ---------- 角色表情绑定层 ---------- */
+.mascot-slot {
+  position: absolute;
+  left: 11%;
+  width: 78%;
+  top: 29.5%;
+  aspect-ratio: 1;
+  transition: scale 0.35s var(--spring-css);
+}
+
+.char-body,
+.char-drop-shadow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.mascot-slot .char-body {
+  filter: hue-rotate(calc(var(--hue-shift, 0) * 1deg));
+}
+
+.char-drop-shadow {
+  translate: 0 4%;
+  filter: brightness(0) blur(calc(var(--pack-w) * 0.026));
+  opacity: 0.42;
+}
+
+.rig-eye {
+  position: absolute;
+  aspect-ratio: 1 / 1.18;
+  transition: opacity 0.09s, scale 0.14s var(--ease-out);
+}
+
+.rig-pupil {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: scale 0.2s var(--ease-out);
+}
+
+.rig-mouth {
+  position: absolute;
+  transition: opacity 0.08s, scale 0.2s var(--ease-out);
+}
+
+.rig-joy {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  scale: 0.86;
+  transition: opacity 0.1s, scale 0.32s var(--spring-css);
+  pointer-events: none;
+}
+
+.card.revealed.hovered .rig-joy {
+  opacity: 1;
+  scale: 1;
+}
+
+.card.revealed.hovered .rig-eye,
+.card.revealed.hovered .rig-mouth {
+  opacity: 0;
+  scale: 0.7;
+}
+
+.rig-ouch {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  scale: 0.84;
+  transition: opacity 0.08s, scale 0.24s var(--spring-css);
+  pointer-events: none;
+}
+
+.rig-sweat {
+  position: absolute;
+  opacity: 0;
+  scale: 0.7;
+  translate: 0 -42%;
+  transition: opacity 0.18s, scale 0.3s var(--spring-css), translate 0.48s var(--ease-out);
+  pointer-events: none;
+}
+
+.pack.tearing .mascot-slot {
+  scale: 1.06 0.92;
+  animation: wince-shake 90ms steps(2) infinite;
+}
+
+.pack.tearing .rig-eye,
+.pack.tearing .rig-mouth {
+  opacity: 0;
+  scale: 1 0.1;
+}
+
+.pack.tearing .rig-ouch {
+  opacity: 1;
+  scale: 1;
+}
+
+.pack.wincing .rig-sweat {
+  opacity: 1;
+  scale: 1;
+  translate: 0 0;
+}
+
+.pack.tugging .mascot-slot {
+  scale: 0.95 1.07;
+}
+
+@keyframes wince-shake {
+  50% {
+    translate: 1.2px -0.8px;
+  }
+}
+
+/* ---------- 12 段卷曲封条与金属撕裂断茬 ---------- */
+.tear-flap {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  visibility: hidden;
+}
+
+.tear-flap.visible {
+  visibility: visible;
+}
+
+.strip-segment {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform-origin: 0 0;
+}
+
+.strip-segment .front {
+  transform: translateZ(0.45px);
+}
+
+.pouch-face.foil-lining {
+  transform: rotateY(180deg) translateZ(0.45px);
+  background: linear-gradient(
+    97deg,
+    #dde4f0,
+    #ffffff 13%,
+    #c3cde0 27%,
+    #ffffff 45%,
+    #d5deed 59%,
+    #ffffff 77%,
+    #c9d4e6
+  );
+}
+
+.pouch-face.foil-lining::before,
+.pouch-face.foil-lining::after {
+  display: none;
+}
+
+.curl-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: #080a16;
+  opacity: 0;
+}
+
+.lip-shadow {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  filter: drop-shadow(0 1.5px 1.4px rgba(0, 0, 0, 0.48));
+}
+
+.foil-lip {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  clip-path: polygon(0 0);
+  background: linear-gradient(
+    100deg,
+    #f3f6fb,
+    #ffffff 14%,
+    #b8c2d6 28%,
+    #ffffff 43%,
+    #c5cfe2 58%,
+    #fcfdff 73%,
+    #b2bdd1 87%,
+    #eef1f7
+  );
+}
+
+.grab-zone {
+  position: absolute;
+  inset: -24px -16px -8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  appearance: none;
+  cursor: grab;
+  touch-action: none;
+  transform: translateZ(calc(var(--pack-depth) / 2 + 1px));
+  -webkit-tap-highlight-color: transparent;
+}
+
+.grab-zone:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 8px;
+}
+
+.pack.tearing .grab-zone,
+.pack.tugging .grab-zone {
+  cursor: grabbing;
+}
+
+/* ---------- 双面 3D 典藏卡牌（精密星轨卡背 + 分区全息金属卡框） ---------- */
+.card {
+  width: var(--card-w);
+  height: var(--card-h);
+  margin: calc(var(--card-h) / -2) 0 0 calc(var(--card-w) / -2);
+  touch-action: none;
+  cursor: pointer;
+  --px: 50;
+  --py: 50;
+  --hyp: 0;
+  --aura-color: transparent;
+}
+
+.card:focus {
+  outline: none;
+}
+
+.card:focus-visible .card-face,
+.card:focus-visible .card-back {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.card-face,
+.card-back,
+.card-edge {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--card-w) * 0.052);
+}
+
+.card-edge {
+  background: var(--card-edge-color, #9b9589);
+  pointer-events: none;
+}
+
+.card-edge:nth-child(1) {
+  transform: translateZ(-1.5px);
+}
+.card-edge:nth-child(2) {
+  transform: translateZ(-3px);
+}
+.card-edge:nth-child(3) {
+  transform: translateZ(-4.5px);
+  box-shadow: 0 28px 46px -14px rgba(0, 0, 0, 0.68);
+}
+
+/* 精密星盘玑镂压纹卡背（Guilloché Collector Back） */
+.card-back {
+  transform: rotateY(180deg) translateZ(5.2px);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  container-type: inline-size;
+  color: #e4d3a8;
+  background:
+    radial-gradient(circle at 50% 47%, rgba(124, 152, 255, 0.2), transparent 58%),
+    repeating-radial-gradient(circle at 50% 47%, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 9px),
+    linear-gradient(155deg, #171c34 0%, #0b0e1d 52%, #14172b 100%);
+  border: 1.5px solid rgba(228, 211, 168, 0.28);
+  box-shadow:
+    inset 0 0 0 4px rgba(255, 255, 255, 0.03),
+    0 24px 42px -14px rgba(0, 0, 0, 0.65);
+  transition: box-shadow 0.28s var(--ease-out), border-color 0.28s var(--ease-out);
+}
+
+.card-back-guilloche {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.card-back-crest {
+  position: absolute;
+  left: 50%;
+  top: 47.2%;
+  width: 24%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.2px solid rgba(238, 218, 168, 0.55);
+  background:
+    radial-gradient(circle at 35% 32%, rgba(255, 255, 255, 0.35), rgba(30, 38, 76, 0.85) 68%),
+    var(--holo-rainbow) 50% 50% / 240% 240%;
+  background-blend-mode: normal, soft-light;
+  box-shadow:
+    0 0 22px -2px var(--aura-color, rgba(228, 211, 168, 0.22)),
+    inset 0 0 10px rgba(255, 255, 255, 0.25);
+  transition: scale 0.3s var(--spring-css), box-shadow 0.25s;
+}
+
+.card-back-gem {
+  font-size: 8.5cqw;
+  line-height: 1;
+  color: #fff6dc;
+  text-shadow: 0 0 10px rgba(255, 230, 168, 0.65);
+}
+
+.card-back-top,
+.card-back-sub {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font: 700 3.1cqw / 1 system-ui, sans-serif;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(236, 222, 186, 0.64);
+}
+
+.card-back-top {
+  top: 11.5%;
+}
+
+.card-back-sub {
+  bottom: 11.5%;
+}
+
+/* 悬念未翻开时的稀有度边缘光环 */
+.card.settled.unrevealed:not(.rarity-common) .card-back {
+  border-color: var(--aura-color);
+  box-shadow:
+    0 0 0 1px var(--aura-color),
+    0 0 26px 3px var(--aura-color),
+    0 26px 42px -14px rgba(0, 0, 0, 0.72);
+}
+
+.card.settled.unrevealed.rarity-secret .card-back {
+  animation: secret-back-pulse 1.5s linear infinite;
+}
+
+@keyframes secret-back-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 1.5px #ff66dc, 0 0 34px 6px rgba(255, 92, 214, 0.82), 0 26px 42px -14px rgba(0, 0, 0, 0.75);
+  }
+  50% {
+    box-shadow: 0 0 0 1.5px #5ce6ff, 0 0 38px 8px rgba(92, 230, 255, 0.86), 0 26px 42px -14px rgba(0, 0, 0, 0.75);
+  }
+}
+
+.card.settled.unrevealed.hovered .card-back-crest {
+  scale: 1.14;
+  box-shadow:
+    0 0 32px 5px var(--aura-color, rgba(255, 236, 184, 0.5)),
+    inset 0 0 16px rgba(255, 255, 255, 0.55);
+}
+
+/* ---------- 典藏卡正面：双斜切金属内框 + 选择性全息 + 哑光高对比铭牌 ---------- */
+.card-face {
+  transform: translateZ(0.6px);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  isolation: isolate;
+  container-type: inline-size;
+  background: var(--card-frame-bg);
+  color: var(--card-text-color);
+}
+
+.card-full-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 金属外框内侧的精细高光压线 */
+.card-inner-bevel {
+  position: absolute;
+  inset: 2.8% 3.8%;
+  z-index: 1;
+  border-radius: 3.8cqw;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+
+.art-window {
+  position: absolute;
+  left: 6.4%;
+  right: 6.4%;
+  top: 4.8%;
+  height: 58.6%;
+  z-index: 1;
+  border-radius: 3.2cqw;
+  overflow: hidden;
+  background: var(--card-window-bg);
+  border: 1.2px solid rgba(255, 255, 255, 0.42);
+  box-shadow:
+    inset 0 2px 8px rgba(0, 0, 0, 0.42),
+    0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.art-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(80% 70% at 50% 42%, transparent 52%, rgba(0, 0, 0, 0.34) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, transparent 22%, rgba(0, 0, 0, 0.24) 100%);
+  pointer-events: none;
+}
+
+.art-floor-shadow {
+  position: absolute;
+  left: 24%;
+  right: 24%;
+  bottom: 6.5%;
+  height: 9%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.56), transparent);
+  filter: blur(1.6px);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.card.settled.front-visible .art-floor-shadow {
+  opacity: 1;
+}
+
+/* 下半部典藏哑光铭牌（z-index: 3 位于 foil-holo 之上，彻底杜绝全息炫光糊字！） */
+.card-plaque {
+  position: absolute;
+  left: 6.4%;
+  right: 6.4%;
+  top: 65.4%;
+  bottom: 4.8%;
+  z-index: 3;
+  padding: 3.4cqw 4.2cqw 3cqw;
+  border-radius: 3cqw;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--card-plaque-bg, rgba(20, 20, 28, 0.92));
+  border: 1px solid color-mix(in srgb, currentColor 18%, rgba(255, 255, 255, 0.32));
+  box-shadow:
+    0 4px 12px -4px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.card-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2cqw;
+}
+
+.card-title {
+  font: 800 8.2cqw / 1.02 -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  letter-spacing: -0.025em;
+}
+
+.card-tag {
+  padding: 1.3cqw 2.4cqw;
+  border-radius: 99px;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  font: 700 3.05cqw / 1 system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.card-trait {
+  margin: 0;
+  font: 500 3.35cqw / 1.2 "PingFang SC", -apple-system, system-ui, sans-serif;
+  opacity: 0.72;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-foot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 2.1cqw;
+  border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  font: 600 3.25cqw / 1 system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-serial {
+  letter-spacing: 0.08em;
+  opacity: 0.64;
+}
+
+.card-rarity {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.2cqw;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.94;
+}
+
+.rarity-gems {
+  color: color-mix(in srgb, currentColor 70%, #d99b26);
+}
+
+.card.rarity-ultra .rarity-gems,
+.card.rarity-secret .rarity-gems {
+  color: #e09f1f;
+}
+
+.card.rarity-secret .card-plaque {
+  border-color: rgba(235, 196, 104, 0.48);
+  box-shadow:
+    0 4px 14px -4px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 232, 168, 0.32);
+}
+
+/* 首次解锁 NEW 角标 & 特殊异画闪膜戳记 */
+.new-badge {
+  position: absolute;
+  left: 9%;
+  top: 7.2%;
+  z-index: 5;
+  padding: 1.3cqw 2.6cqw;
+  border-radius: 99px;
+  background: linear-gradient(135deg, #ff3d6e, #ff8a3d);
+  color: #ffffff;
+  font: 800 3.1cqw / 1 system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  box-shadow: 0 3px 10px rgba(255, 61, 110, 0.55);
+}
+
+.foil-stamp {
+  position: absolute;
+  right: 9%;
+  top: 7.2%;
+  z-index: 5;
+  padding: 1.3cqw 2.5cqw;
+  border-radius: 99px;
+  background: rgba(14, 16, 28, 0.8);
+  border: 1px solid rgba(255, 232, 168, 0.55);
+  backdrop-filter: blur(4px);
+  color: #fff3c4;
+  font: 700 3.05cqw / 1 system-ui, sans-serif;
+  letter-spacing: 0.06em;
+}
+
+/* 角色立绘在正面朝前且落定后沿 Z 轴浮出卡面 */
+.char-pop {
+  position: absolute;
+  left: 11.5%;
+  width: 77%;
+  top: 5.2%;
+  aspect-ratio: 1;
+  transform: translateZ(1px);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  opacity: 0;
+  transition: transform 0.65s var(--spring-css), opacity 0.14s;
+  pointer-events: none;
+}
+
+.card.front-visible .char-pop {
+  opacity: 1;
+}
+
+.card.settled.front-visible .char-pop {
+  transform: translateZ(calc(var(--card-w) * 0.14));
+}
+
+.char-pop .char-body {
+  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.38));
+}
+
+/* 全息虹彩 + 星尘闪粉（z-index: 2 照亮画窗与金属卡框）+ 表层清漆镜面（z-index: 4） */
+.foil-holo,
+.foil-glare {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.foil-holo {
+  background: var(--holo-rainbow) calc(var(--px) * 1%) calc(var(--py) * 1%) / 400% 400%;
+  mix-blend-mode: color-dodge;
+  opacity: calc(0.28 + var(--hyp) * 0.62);
+  filter: brightness(0.74) contrast(1.48) saturate(1.42);
+}
+
+.foil-holo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  mask: var(--holo-glitter) 0 0 / 140px 140px;
+  filter: brightness(1.85);
+}
+
+.foil-glare {
+  background: radial-gradient(
+    farthest-corner circle at calc(var(--px) * 1%) calc(var(--py) * 1%),
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0.12) 38%,
+    rgba(0, 0, 0, 0.28)
+  );
+  mix-blend-mode: overlay;
+  opacity: calc(0.22 + var(--hyp) * 0.54);
+}
+
+.foil-clearcoat {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.72),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.22);
+  background:
+    radial-gradient(
+      40% 24% at calc(var(--px) * 1%) calc(var(--py) * 1%),
+      rgba(255, 255, 255, calc(0.06 + var(--hyp) * 0.34)),
+      transparent
+    ),
+    linear-gradient(rgba(255, 255, 255, 0.2), transparent 14%);
+}
+
+.foil-clearcoat::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  mask: linear-gradient(#000 32%, transparent 78%);
+  background: linear-gradient(
+      112deg,
+      transparent 44%,
+      rgba(255, 255, 255, 0.36) 44.4%,
+      rgba(255, 255, 255, 0.11) 52%,
+      transparent 52.4%,
+      transparent 54%,
+      rgba(255, 255, 255, 0.2) 54.3%,
+      rgba(255, 255, 255, 0.04) 56.4%,
+      transparent 56.7%
+    )
+    calc((100 - var(--px)) * 1%) 0 / 220% 100%;
+}
+
+/* 普通卡：仅在画窗内透出星尘微闪，保持边框温润金属质感 */
+.card.rarity-common:not(.variant-reverse) .foil-holo {
+  inset: 4.8% 6.4% 36.6%;
+  border-radius: 3.2cqw;
+  mask: var(--holo-glitter) 0 0 / 112px 112px;
+  opacity: calc(0.46 + var(--hyp) * 0.44);
+}
+
+.card.rarity-common:not(.variant-reverse) .foil-holo::after {
+  display: none;
+}
+
+/* 棱镜星尘异画 */
+.card.variant-prism .foil-holo {
+  filter: brightness(0.88) contrast(1.65) saturate(1.65);
+}
+
+/* 超稀有金卡：放射光束 + 彩虹流光双层叠加 */
+.card.rarity-ultra .foil-holo {
+  mix-blend-mode: overlay;
+  opacity: calc(0.56 + var(--hyp) * 0.44);
+  background:
+    repeating-conic-gradient(
+      from calc(var(--px) * 1deg) at 50% 36%,
+      transparent 0 3deg,
+      rgba(255, 255, 255, 0.5) 4deg 5deg,
+      transparent 6deg 10deg
+    ),
+    var(--holo-rainbow) calc(var(--px) * 1%) calc(var(--py) * 1%) / 400% 400%;
+}
+
+/* 秘藏黑金幻彩卡（Secret Rare）：双向对旋激光星芒 + 黑欧泊金边 */
+.card.rarity-secret .card-face {
+  box-shadow: inset 0 0 0 1.5px rgba(255, 214, 122, 0.72);
+}
+
+.card.rarity-secret .foil-holo {
+  mix-blend-mode: color-dodge;
+  opacity: calc(0.58 + var(--hyp) * 0.42);
+  filter: brightness(0.88) contrast(1.55) saturate(1.7);
+  background:
+    repeating-conic-gradient(
+      from calc(var(--px) * 1.4deg) at 50% 35%,
+      rgba(255, 110, 218, 0.55) 0 4deg,
+      transparent 4deg 12deg,
+      rgba(92, 230, 255, 0.55) 12deg 16deg,
+      transparent 16deg 24deg
+    ),
+    repeating-conic-gradient(
+      from calc((100 - var(--py)) * 1.4deg) at 50% 58%,
+      rgba(255, 216, 102, 0.45) 0 3deg,
+      transparent 3deg 15deg
+    ),
+    var(--holo-rainbow) calc(var(--px) * 1%) calc(var(--py) * 1%) / 320% 320%;
+}
+
+/* ---------- 纸屑画布、手势轻提示与底部一体化精密控制台 ---------- */
+.confetti-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.bottom-chrome {
+  position: fixed;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom, 18px));
+  z-index: 25;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 24px);
+  pointer-events: none;
+}
+
+/* 纯排版引导轻语（去除伪按钮胶囊外壳） */
+.gesture-hint {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--chrome-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+  transition: opacity 0.28s var(--ease-out), translate 0.28s var(--ease-out);
+}
+
+html[data-studio-light="day"] .gesture-hint {
+  text-shadow: none;
+}
+
+.gesture-hint::before,
+.gesture-hint::after {
+  content: "";
+  width: 18px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.38;
+}
+
+.gesture-hint.hidden {
+  opacity: 0;
+  translate: 0 6px;
+}
+
+/* 一体化精密底座控制台 */
+.console-dock {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: var(--chrome-surface);
+  border: 1px solid var(--chrome-border);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  box-shadow: var(--chrome-shadow);
+  transition: background-color 0.28s var(--ease-out), border-color 0.28s var(--ease-out);
+}
+
+.console-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--chrome-sep);
+  flex-shrink: 0;
+}
+
+.console-item {
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 13px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--chrome-ink);
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 0.18s var(--ease-out), border-color 0.18s var(--ease-out), scale 0.16s var(--ease-out);
+}
+
+button.console-item {
+  cursor: pointer;
+}
+
+button.console-item:active {
+  scale: 0.96;
+}
+
+button.console-item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.console-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1;
+}
+
+.console-kicker {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--chrome-muted);
+}
+
+.console-val {
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.binder-icon {
+  color: var(--smkt-green-luminous);
+  flex-shrink: 0;
+}
+
+html[data-studio-light="day"] .binder-icon {
+  color: var(--smkt-green);
+}
+
+.binder-bar {
+  width: 28px;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--chrome-sep);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.binder-bar > i {
+  display: block;
+  height: 100%;
+  width: var(--binder-pct, 0%);
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--smkt-green), var(--smkt-green-luminous));
+  transition: width 0.35s var(--ease-out);
+}
+
+/* 3 格保底刻度指示灯 */
+.pity-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 3.5px;
+}
+
+.pity-pip {
+  width: 5px;
+  height: 14px;
+  border-radius: 99px;
+  background: var(--chrome-sep);
+  transition: background-color 0.25s, box-shadow 0.25s;
+}
+
+.pity-pip.active {
+  background: var(--smkt-green-luminous);
+  box-shadow: 0 0 8px rgba(50, 173, 98, 0.55);
+}
+
+html[data-studio-light="day"] .pity-pip.active {
+  background: var(--smkt-green);
+  box-shadow: none;
+}
+
+.pity-meter.pity-ready .pity-pip.active {
+  background: #f5c451;
+  box-shadow: 0 0 10px rgba(245, 196, 81, 0.8);
+}
+
+.pity-meter.pity-ready .console-val {
+  color: #f5c451;
+}
+
+html[data-studio-light="day"] .pity-meter.pity-ready .console-val {
+  color: #9e6500;
+}
+
+/* 中央情境主操作按钮组 */
+.console-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.dock-btn {
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: scale 0.16s var(--ease-out), filter 0.18s, background-color 0.18s;
+}
+
+.dock-btn[hidden] {
+  display: none;
+}
+
+.dock-btn.primary {
+  background: var(--cta-primary-bg);
+  color: var(--cta-primary-ink);
+  border: 1px solid var(--cta-primary-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 6px 16px -6px rgba(16, 48, 28, 0.45);
+}
+
+.dock-btn.secondary {
+  background: var(--cta-secondary-bg);
+  color: var(--cta-secondary-ink);
+  border: 1px solid var(--cta-secondary-border);
+}
+
+.dock-btn:active {
+  scale: 0.95;
+}
+
+.dock-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* 欧皇全闪拨杆开关 */
+.luck-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--chrome-sep);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: background-color 0.22s, box-shadow 0.22s;
+  flex-shrink: 0;
+}
+
+.luck-switch[aria-pressed="true"] {
+  background: linear-gradient(135deg, rgba(58, 42, 16, 0.72), rgba(38, 26, 56, 0.78));
+  border-color: rgba(245, 198, 84, 0.55);
+  color: #ffe8a3;
+}
+
+.luck-switch[aria-pressed="true"] .console-kicker {
+  color: rgba(255, 224, 148, 0.72);
+}
+
+.luck-switch[aria-pressed="true"] .luck-led {
+  background: #ffd454;
+  box-shadow: 0 0 10px 2px rgba(255, 212, 84, 0.85);
+}
+
+/* ---------- 12 卡黑金丝绒典藏册弹窗 ---------- */
+.binder-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.binder-modal[hidden] {
+  display: none;
+}
+
+.binder-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 7, 12, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.binder-sheet {
+  position: relative;
+  z-index: 1;
+  width: min(880px, 100%);
+  max-height: min(85vh, 780px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  background:
+    radial-gradient(90% 60% at 50% 0%, rgba(26, 107, 58, 0.18), transparent 72%),
+    linear-gradient(180deg, #101713 0%, #090d0b 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f4f2ee;
+  box-shadow:
+    0 34px 72px -16px rgba(0, 0, 0, 0.84),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+  animation: sheet-in 0.28s var(--ease-out);
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    scale: 0.95;
+    translate: 0 12px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+.binder-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.binder-sub {
+  margin: 0 0 4px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(235, 232, 224, 0.6);
+  font-variant-numeric: tabular-nums;
+}
+
+.binder-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #faf7f0;
+}
+
+.binder-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.binder-reset,
+.binder-close {
+  height: 34px;
+  padding: 0 15px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.18s, border-color 0.18s;
+}
+
+.binder-reset {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: rgba(235, 230, 218, 0.68);
+}
+
+.binder-close {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.binder-grid {
+  padding: 20px 24px 26px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.binder-slot {
+  position: relative;
+  aspect-ratio: 5 / 7;
+  border-radius: 14px;
+  padding: 9px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #141724;
+  text-align: left;
+}
+
+.binder-slot.unlocked {
+  background: var(--slot-bg);
+  color: var(--slot-ink);
+  border-color: rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+  box-shadow:
+    0 12px 24px -12px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: translate 0.2s var(--ease-out), box-shadow 0.2s;
+}
+
+.binder-slot.unlocked:hover {
+  translate: 0 -4px;
+  box-shadow:
+    0 18px 32px -10px rgba(0, 0, 0, 0.78),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.binder-slot.locked {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.03), transparent 70%),
+    linear-gradient(160deg, #181b29, #10121c);
+  color: rgba(255, 255, 255, 0.36);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.binder-art {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  margin-bottom: 7px;
+  border-radius: 9px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--slot-win, rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.binder-slot.locked .binder-art {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.binder-art img {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.32));
+}
+
+.binder-slot.locked .binder-art img {
+  filter: brightness(0) invert(1) opacity(0.11);
+}
+
+.binder-count-pill {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: rgba(10, 12, 22, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.binder-foil-pill {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  padding: 2px 6px;
+  border-radius: 99px;
+  background: linear-gradient(135deg, #ffd454, #ff85e0);
+  color: #1a1224;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.binder-plaque {
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--slot-plaque, rgba(16, 18, 28, 0.85));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.binder-slot.locked .binder-plaque {
+  background: rgba(255, 255, 255, 0.025);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.binder-meta-name {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.binder-meta-sub {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  opacity: 0.74;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .util-btn:hover,
+  button.console-item:hover {
+    background: var(--chrome-hover);
+  }
+  .luck-switch[aria-pressed="true"]:hover {
+    background: linear-gradient(135deg, rgba(72, 52, 20, 0.82), rgba(48, 34, 70, 0.86));
+  }
+  .dock-btn:hover {
+    filter: brightness(1.06);
+  }
+  .binder-reset:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+  }
+  .binder-close:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
+@media (max-width: 720px) {
+  .top-bar {
+    left: 14px;
+    right: 14px;
+  }
+  .brand-wordmark {
+    height: 23px;
+  }
+  .util-btn.mode-btn #themeModeLabel {
+    display: none;
+  }
+  .util-btn.mode-btn {
+    width: 32px;
+    padding: 0;
+  }
+  .console-dock {
+    flex-wrap: wrap;
+    justify-content: center;
+    border-radius: 22px;
+    padding: 6px 10px;
+    gap: 4px 6px;
+  }
+  .console-sep {
+    display: none;
+  }
+  .console-item {
+    height: 36px;
+    padding: 0 10px;
+    gap: 6px;
+  }
+  .binder-bar {
+    display: none;
+  }
+  .dock-btn {
+    height: 34px;
+    padding: 0 14px;
+    font-size: 12.5px;
+  }
+  .gesture-hint {
+    font-size: 11.5px;
+  }
+  .gesture-hint::before,
+  .gesture-hint::after {
+    width: 10px;
+  }
+  .binder-grid {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 14px;
+    gap: 10px;
+  }
+}
+
+@media (pointer: coarse) {
+  .card-edge:nth-child(-n + 2) {
+    display: none;
+  }
+  .mascot-slot .char-body {
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pack.tearing .mascot-slot,
+  .pack-aura.god-mode,
+  .card.settled.unrevealed.rarity-secret .card-back,
+  .stage.impact-ultra,
+  .stage.impact-secret {
+    animation: none;
+  }
+}

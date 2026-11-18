@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-CN" data-studio-light="day">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="分号教育结构化练习卡包，撕开包装，每类随机一道题。">
+  
+  
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230d1511'/><path d='M16 4 19.2 12.8 28 16 19.2 19.2 16 28 12.8 19.2 4 16 12.8 12.8Z' fill='%2332ad62'/></svg>">
+  <title>分号教育 · 结构化题目卡包</title>
+  <link rel="stylesheet" href="src/styles.css">
+  <link rel="stylesheet" href="src/fenhao.css">
+</head>
+<body>
+  <h1 class="sr-only">结构化题目卡包</h1>
+
+  <!-- 顶部居中品牌获批字标 + 右上角灯光/音效工具簇 -->
+  <header class="top-bar">
+    <a class="back-tools" href="/zh-Hans">← 学生工具</a>
+
+    <div class="utility-cluster">
+      <button class="util-btn mode-btn" id="themeModeBtn" type="button" aria-label="切换舞台灯光模式">
+        <svg class="icon-mode" viewBox="0 0 20 20" width="15" height="15" aria-hidden="true">
+          <g class="icon-darkroom" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <path d="M10 2.5v2.2M6 4.2l1.2 1.8M14 4.2l-1.2 1.8"/>
+            <path d="M5.2 15.5h9.6L12.6 8H7.4z" fill="currentColor" fill-opacity="0.18"/>
+          </g>
+          <g class="icon-daylight" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <circle cx="10" cy="10" r="3.4"/>
+            <path d="M10 2.4v2M10 15.6v2M2.4 10h2M15.6 10h2M4.6 4.6l1.4 1.4M14 14l1.4 1.4M15.4 4.6 14 6M6 14l-1.4 1.4"/>
+          </g>
+        </svg>
+        <span id="themeModeLabel">暗房聚光</span>
+      </button>
+
+      <button class="util-btn mute-btn" id="muteBtn" type="button" aria-label="静音切换" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
+          <path d="M4 9.5v5h3.5l4.5 4v-13l-4.5 4z" fill="currentColor"/>
+          <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <g class="icon-sound-on">
+              <path d="M15.5 9.2a4 4 0 0 1 0 5.6"/>
+              <path d="M18.2 6.8a7.5 7.5 0 0 1 0 10.4"/>
+            </g>
+            <g class="icon-sound-off">
+              <path d="m15.5 9.5 5 5m0-5-5 5"/>
+            </g>
+          </g>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 高罕出货横幅 -->
+  <div class="pull-banner" id="pullBanner" aria-live="polite" hidden>
+    <span class="banner-kicker" id="bannerKicker">PRISM ARCHIVE</span>
+    <strong class="banner-title" id="bannerTitle">欧皇全闪包降临</strong>
+  </div>
+
+  <!-- 建筑光学玻璃三维舞台 -->
+  <main class="stage" id="stage">
+    <div class="stage-backdrop" aria-hidden="true"></div>
+    <i class="stage-spotlight" aria-hidden="true"></i>
+    <i class="stage-grain" aria-hidden="true"></i>
+    <i class="pack-aura" id="packAura" aria-hidden="true"></i>
+    <i class="ground-shadow" id="groundShadow" aria-hidden="true"></i>
+
+    <div class="scene" id="scene">
+      <!-- 袋口内侧彩虹光流层 -->
+      <div class="jet-anchor" id="jetAnchor" aria-hidden="true">
+        <svg class="light-jet" id="lightJet" viewBox="0 0 100 76"></svg>
+      </div>
+
+      <!-- 立体镀铝复合膜补充包 -->
+      <div class="pack" id="pack">
+        <div class="pouch-face front" aria-hidden="true">
+          <span class="tear-label" id="tearLabel">◀ TEAR SEAL ⟶</span>
+          <i class="tear-guide"></i>
+          <span class="lip-shadow"><i class="foil-lip" id="bodyLip"></i></span>
+
+          <div class="pouch-foil-frame">
+            <div class="pouch-header">
+              <b class="brand-mark" id="brandLogo">PRISM</b>
+              <span class="edition-tag" id="editionTag">COBALT · CBL-01</span>
+            </div>
+            <i class="pouch-halo-ring"></i>
+          </div>
+
+          <div class="mascot-slot" id="mascotSlot"></div>
+
+          <div class="pouch-footer">
+            <div class="pouch-foot-row">
+              <span class="pack-foot left" id="footLeft">SERIES 01 // ARCHIVE</span>
+              <span class="pack-foot right" id="footRight">5 FOIL CARDS</span>
+            </div>
+            <span class="pack-micro-spec" id="microSpec">METALLIZED EDITION · HOLO GUARANTEED</span>
+          </div>
+        </div>
+
+        <div class="pouch-face back" aria-hidden="true">
+          <i class="back-fin"></i>
+          <div class="back-print-box">
+            <b class="brand-mark back-mark" id="backLogo">PRISM</b>
+            <p class="back-blurb" id="backBlurb">12 Archival Sprites<br>Holo Foil or Higher Guaranteed</p>
+            <span class="back-spec" id="backSpec">AUTHENTIC MYLAR FOIL PACK · LOT 2026-S01</span>
+          </div>
+          <i class="back-barcode"></i>
+        </div>
+
+        <!-- 12 段可弯曲撕条容器 -->
+        <div class="tear-flap" id="tearFlap" aria-hidden="true"></div>
+
+        <!-- 扩大热区的交互抓取按钮 -->
+        <button
+          class="grab-zone"
+          id="grabZone"
+          type="button"
+          aria-label="结构化题目卡包，六大类别各一道随机题。按住封口横向撕开，或点击抽卡。"
+        ></button>
+      </div>
+    </div>
+
+    <!-- 纸屑、撕口火花与翻牌冲击波画布 -->
+    <canvas class="confetti-canvas" id="confettiCanvas" aria-hidden="true"></canvas>
+  </main>
+
+  <!-- 底部手势轻提示与一体化精密控制台 -->
+  <div class="bottom-chrome">
+    <p class="gesture-hint" id="gestureHint">按住封口横向撕开，或轻点卡包抽题</p>
+
+    <footer class="console-dock" id="controlConsole" aria-label="抽卡与图鉴控制台">
+      <button class="console-item binder-trigger" id="binderBtn" type="button" aria-haspopup="dialog" aria-controls="binderModal">
+        <svg class="binder-icon" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+          <rect x="3" y="2.5" width="14" height="15" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M6.8 2.5v15M10.2 7.2h3.8M10.2 10.4h2.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span class="console-meta">
+          <span class="console-kicker">典藏册</span>
+          <strong class="console-val" id="binderCount">0 / 12</strong>
+        </span>
+        <i class="binder-bar" aria-hidden="true"><i id="binderFill"></i></i>
+      </button>
+
+      <i class="console-sep" aria-hidden="true"></i>
+
+      <div class="console-item pity-meter" id="pityBadge" aria-live="polite">
+        <span class="pity-pips" aria-hidden="true">
+          <i class="pity-pip active"></i>
+          <i class="pity-pip"></i>
+          <i class="pity-pip"></i>
+        </span>
+        <span class="console-meta">
+          <span class="console-kicker">高罕保底</span>
+          <strong class="console-val" id="pityText">3 包内必金</strong>
+        </span>
+      </div>
+
+      <i class="console-sep" aria-hidden="true"></i>
+
+      <div class="console-actions" id="actionDock">
+        <button class="dock-btn primary" id="drawBtn" type="button">抽一包题目</button>
+        <button class="dock-btn secondary" id="shakeBtn" type="button">摇包验包</button>
+        <button class="dock-btn primary" id="flipAllBtn" type="button" hidden>一键翻开</button>
+        <button class="dock-btn primary" id="againBtn" type="button" hidden>再来一包</button>
+      </div>
+
+      <i class="console-sep" aria-hidden="true"></i>
+
+      <button class="console-item luck-switch" id="luckBtn" type="button" aria-pressed="false" title="切换下一包必出全闪欧皇包">
+        <i class="luck-led" aria-hidden="true"></i>
+        <span class="console-meta">
+          <span class="console-kicker">全闪测试</span>
+          <strong class="console-val" id="luckLabel">欧皇待命</strong>
+        </span>
+      </button>
+    </footer>
+  </div>
+
+  <!-- 12 卡黑金丝绒典藏册弹窗 -->
+  <div class="binder-modal" id="binderModal" role="dialog" aria-modal="true" aria-labelledby="binderTitle" hidden>
+    <div class="binder-backdrop" id="binderBackdrop"></div>
+    <section class="binder-sheet">
+      <header class="binder-head">
+        <div>
+          <p class="binder-sub" id="binderStatsText">已拆 0 包 · 累计收录 0 张</p>
+          <h2 class="binder-title" id="binderTitle">PRISM · Series 01 典藏卡册</h2>
+        </div>
+        <div class="binder-actions">
+          <button class="binder-reset" id="resetBinderBtn" type="button">重置存档</button>
+          <button class="binder-close" id="closeBinderBtn" type="button" aria-label="关闭典藏卡册">关闭</button>
+        </div>
+      </header>
+      <div class="binder-grid" id="binderGrid"></div>
+    </section>
+  </div>
+
+  <p class="sr-only" id="liveStatus" aria-live="polite"></p>
+
+  <script type="module" src="src/main.js"></script>
+<a class="source-note" href="https://github.com/Lone3m-tech/prism-holo-pack" target="_blank" rel="noopener">动效基于 PRISM · MIT</a>
+</body>
+</html>
