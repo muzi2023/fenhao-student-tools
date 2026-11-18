@@ -1015,7 +1015,7 @@ function computeFanSlot(cardObj) {
   const vh = window.innerHeight;
 
   if (vh > vw * 1.15) {
-    const targetW = Math.min((vw - 42) / 2, (vh - 190) / 4.5, baseW);
+    const targetW = Math.min((vw - 42) / 2, (vh - 250) / 4.5, baseW);
     const col = cardObj.slot % 2;
     const row = Math.floor(cardObj.slot / 2);
     return {
