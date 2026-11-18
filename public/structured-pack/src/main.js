@@ -226,8 +226,8 @@ function triggerBlink(eyeElements, count = 1) {
 }
 
 // 装配封面吉祥物并预解码全部贴图
-mascotSlot.innerHTML = '';
-$('#drawBtn')?.addEventListener('click', () => grabZone.click());
+mascotSlot.innerHTML = buildRigMarkup(MASCOT_CONFIG, { withShadow: true, withOuch: true });
+$('#drawBtn')?.addEventListener('click', () => { if(stageState === 'enter'){clearTimeout(enterTimer);stageState='idle';} grabZone.click(); });
 const packEyes = [...mascotSlot.querySelectorAll('.rig-eye')];
 const packPupils = [...mascotSlot.querySelectorAll('.rig-pupil')];
 
@@ -986,14 +986,44 @@ function buildCardBackMarkup() {
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
-function buildCardMarkup(cardDef) {
-  return '<i class="card-edge"></i><i class="card-edge"></i><i class="card-edge"></i>' + buildCardBackMarkup() +
-    `<div class="card-face question-card"><span class="new-badge" hidden></span>
-    <div class="question-number">${escapeHtml(cardDef.serial)} / 06</div>
-    <h2 class="question-type">${escapeHtml(cardDef.name)}</h2>
-    <p class="question-text">${escapeHtml(cardDef.question || '')}</p>
-    <span class="question-footer">点击查看完整题目 ↗</span>
-    <i class="foil-glare"></i></div>`;
+function buildCardMarkup(cardDef, { foilVariant = null, showNew = false } = {}) {
+  const edges = '<i class="card-edge"></i><i class="card-edge"></i><i class="card-edge"></i>';
+  const back = buildCardBackMarkup();
+  const stampHtml = foilVariant ? `<span class="foil-stamp">${foilVariant.label}</span>` : '';
+  const newHtml = showNew ? `<span class="new-badge">NEW</span>` : `<span class="new-badge" hidden>NEW</span>`;
+
+  if (cardDef.fullArtImage) {
+    return (
+      edges +
+      back +
+      `<div class="card-face">${newHtml}${stampHtml}<img class="card-full-art" src="${cardDef.fullArtImage}" alt="${cardDef.name}">` +
+      `<i class="foil-holo"></i><i class="foil-glare"></i><i class="foil-clearcoat"></i></div>`
+    );
+  }
+  return (
+    edges +
+    back +
+    `<div class="card-face">` +
+    `${newHtml}${stampHtml}` +
+    `<i class="card-inner-bevel"></i>` +
+    `<div class="art-window"><i class="art-vignette"></i><i class="art-floor-shadow"></i></div>` +
+    `<i class="foil-holo"></i>` +
+    `<i class="foil-glare"></i>` +
+    `<div class="card-plaque">` +
+    `<div class="card-head-row">` +
+    `<b class="card-title">${cardDef.name}</b>` +
+    `<span class="card-tag">${cardDef.tag}</span>` +
+    `</div>` +
+    `<p class="card-trait">${escapeHtml(cardDef.question || cardDef.trait || '')}</p>` +
+    `<div class="card-foot-row">` +
+    `<span class="card-serial">${cardDef.serial}</span>` +
+    `<span class="card-rarity"><i class="rarity-gems">${cardDef.rarityMark}</i> ${cardDef.rarityLabel}</span>` +
+    `</div>` +
+    `</div>` +
+    `<i class="foil-clearcoat"></i>` +
+    `</div>` +
+    `<div class="char-pop">${buildRigMarkup(cardDef.character, { withJoy: true })}</div>`
+  );
 }
 
 const questionDialog = document.createElement('dialog');
@@ -1001,7 +1031,10 @@ questionDialog.className = 'question-dialog';
 questionDialog.style.cssText = 'border:0;border-radius:24px;padding:28px;max-width:460px;width:calc(100% - 40px);max-height:80dvh;box-sizing:border-box;background:#fff;color:#20202a;box-shadow:0 24px 100px #0003';
 document.body.append(questionDialog);
 function showQuestion(def) {
-  questionDialog.innerHTML = `<div class="question-dialog-category" style="font-size:14px;color:#6e63d4;margin-bottom:14px">结构化练习 · ${escapeHtml(def.name)}</div><h2 style="font-size:23px;margin:0 0 20px">你的本轮题目</h2><p class="question-dialog-text" style="font-size:20px;line-height:1.8;white-space:pre-wrap">${escapeHtml(def.question)}</p><button type="button" style="margin-top:20px;width:100%;padding:14px;border:0;border-radius:14px;background:#262431;color:white;font-size:16px">返回六张卡</button>`;
+  questionDialog.style.setProperty('--detail-frame', def.frameBg);
+  questionDialog.style.setProperty('--detail-ink', def.textColor);
+  questionDialog.innerHTML = `<div class="question-dialog-head"><div class="detail-mascot">${buildRigMarkup(def.character)}</div><div><span class="detail-series">分号教育 · ${escapeHtml(def.serial)}</span><h2 id="questionDialogTitle">${escapeHtml(def.name)}</h2><span class="detail-sub">本轮随机题目</span></div></div><div class="question-dialog-paper"><p class="question-dialog-text">${escapeHtml(def.question)}</p><button type="button">返回六张卡</button></div>`;
+  questionDialog.setAttribute('aria-labelledby','questionDialogTitle');
   questionDialog.querySelector('button').addEventListener('click', () => questionDialog.close());
   questionDialog.showModal();
 }
@@ -1015,7 +1048,7 @@ function computeFanSlot(cardObj) {
   const vh = window.innerHeight;
 
   if (vh > vw * 1.15) {
-    const targetW = Math.min((vw - 42) / 2, (vh - 250) / 4.5, baseW);
+    const targetW = Math.min((vw - 42) / 2, 160, baseW);
     const col = cardObj.slot % 2;
     const row = Math.floor(cardObj.slot / 2);
     return {
@@ -1193,6 +1226,7 @@ function spawnPackCards() {
   for (const c of cards.slice().reverse()) scene.append(c.el);
 
   if (prefersReducedMotion) {
+    document.body.classList.add('cards-open');
     for (const c of cards) {
       c.phase = 'fanned';
       c.fan = computeFanSlot(c);
@@ -1221,6 +1255,7 @@ function scheduleCardAutoFlipIfCommon(c) {
 }
 
 function beginCardOrbit() {
+  document.body.classList.add('cards-open');
   orbitStartedAt = clockSec;
   scene.classList.add('flat');
   sound.call('swirl', ORBIT_DURATION);
@@ -1490,6 +1525,8 @@ function syncPackGodVisual() {
 
 /* ---------- 新卡包入场与撕包事件 ---------- */
 function enterFreshPack() {
+  document.body.classList.remove('cards-open');
+  window.scrollTo(0,0);
   if ($('#drawBtn')) $('#drawBtn').hidden = false;
   stageState = 'enter';
   zoomedCard = null;
@@ -1741,6 +1778,7 @@ function endDrag(e) {
     autoCompleteTear(0.18);
     return;
   }
+  if ($('#drawBtn')) $('#drawBtn').hidden = false;
   sound.call(pack.classList.contains('wincing') ? 'relief' : 'boing');
   pack.classList.remove('tearing', 'wincing', 'tugging');
   tearState.zAngle.to = 3 + tearState.p.to * 10;

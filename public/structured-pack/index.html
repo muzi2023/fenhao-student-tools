@@ -10,13 +10,14 @@
   <title>分号教育 · 结构化题目卡包</title>
   <link rel="stylesheet" href="src/styles.css">
   <link rel="stylesheet" href="src/fenhao.css">
+<link rel="preload" as="image" href="assets/characters/mascot.png">
 </head>
 <body>
   <h1 class="sr-only">结构化题目卡包</h1>
 
   <!-- 顶部居中品牌获批字标 + 右上角灯光/音效工具簇 -->
   <header class="top-bar">
-    <a class="back-tools" href="/zh-Hans">← 学生工具</a><div class="page-title"><span>分号教育 · 面试练习</span><h1>今天，从六道题开始</h1></div>
+    <a class="back-tools" href="/zh-Hans">← 学生工具</a>
 
     <div class="utility-cluster">
       <button class="util-btn mode-btn" id="themeModeBtn" type="button" aria-label="切换舞台灯光模式">
@@ -79,27 +80,27 @@
 
           <div class="pouch-foil-frame">
             <div class="pouch-header">
-              <b class="brand-mark" id="brandLogo">PRISM</b>
-              <span class="edition-tag" id="editionTag">COBALT · CBL-01</span>
+              <b class="brand-mark" id="brandLogo">结构化</b>
+              <span class="edition-tag" id="editionTag">六大类别</span>
             </div>
             <i class="pouch-halo-ring"></i>
           </div>
 
-          <div class="mascot-slot" id="mascotSlot"></div><div class="pack-lettering" aria-hidden="true"><small>TEACHER INTERVIEW</small><strong>结构化<br>题目卡包</strong><span>六大类别 · 每类一题</span><b>06</b></div>
+          <div class="mascot-slot" id="mascotSlot"><img class="char-body" src="assets/characters/mascot.png" alt=""></div>
 
           <div class="pouch-footer">
             <div class="pouch-foot-row">
-              <span class="pack-foot left" id="footLeft">SERIES 01 // ARCHIVE</span>
-              <span class="pack-foot right" id="footRight">5 FOIL CARDS</span>
+              <span class="pack-foot left" id="footLeft">分号教育</span>
+              <span class="pack-foot right" id="footRight">6 张题卡</span>
             </div>
-            <span class="pack-micro-spec" id="microSpec">METALLIZED EDITION · HOLO GUARANTEED</span>
+            <span class="pack-micro-spec" id="microSpec">六大类别 · 随机一题</span>
           </div>
         </div>
 
         <div class="pouch-face back" aria-hidden="true">
           <i class="back-fin"></i>
           <div class="back-print-box">
-            <b class="brand-mark back-mark" id="backLogo">PRISM</b>
+            <b class="brand-mark back-mark" id="backLogo">结构化</b>
             <p class="back-blurb" id="backBlurb">12 Archival Sprites<br>Holo Foil or Higher Guaranteed</p>
             <span class="back-spec" id="backSpec">AUTHENTIC MYLAR FOIL PACK · LOT 2026-S01</span>
           </div>
@@ -124,7 +125,7 @@
   </main>
 
   <!-- 底部手势轻提示与一体化精密控制台 -->
-  <div class="bottom-chrome"><p class="practice-note">六大类别各抽一题 · 点击卡片查看完整题目</p>
+  <div class="bottom-chrome">
     <p class="gesture-hint" id="gestureHint">按住封口横向撕开，或轻点卡包抽题</p>
 
     <footer class="console-dock" id="controlConsole" aria-label="抽卡与图鉴控制台">

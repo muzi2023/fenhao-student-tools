@@ -12,3 +12,9 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 .pouch-foil-frame{top:14%}.question-dialog{padding:0!important;background:var(--detail-frame)!important}.question-dialog-head{display:flex;align-items:center;gap:18px;padding:24px 25px 18px;color:var(--detail-ink)}.detail-mascot{position:relative;width:88px;height:88px;flex:none;filter:drop-shadow(0 7px 5px #0002)}.detail-series{font-size:10px;letter-spacing:1px;opacity:.6}.question-dialog-head h2{font-size:25px;line-height:1.2;margin:8px 0}.detail-sub{font-size:12px;opacity:.65}.question-dialog-paper{padding:24px 28px;background:#fffcf7;border-radius:18px 18px 0 0}.question-dialog-paper button{display:block;width:100%;border:0;margin-top:25px;font-size:15px;min-height:46px}.question-dialog-text{margin:0!important}.detail-mascot .char-body{filter:none}
+
+/* Let the actual 3D artwork, not transparent sprite padding, fill the art window. */
+.mascot-slot{left:2%;width:96%;top:22%}.char-pop{left:2.5%;width:95%;top:1%}.foil-glare{opacity:calc(.09 + var(--hyp)*.14)}.foil-clearcoat{opacity:.28}.art-vignette{opacity:.45}
+@media(max-width:600px) and (orientation:portrait){.cards-open{min-height:max(860px,100svh)}.cards-open .stage{height:max(840px,calc(100svh - 20px))}.cards-open .bottom-chrome{top:max(790px,calc(100svh - 60px))}.cards-open .top-bar{position:absolute}.card-title{font-size:10cqw}.card-trait{font-size:6.4cqw;line-height:1.35;-webkit-line-clamp:2}.card-foot-row{font-size:5cqw;letter-spacing:0;padding-top:1.4cqw}.card-rarity{font-size:4.7cqw;letter-spacing:0}.card-plaque{top:65%;bottom:3.4%;padding-top:0}}
+
+:root{--pack-color:#eb683b;--pack-highlight:#ffc49e;--pack-shadow:#88351b}

@@ -101,3 +101,11 @@ export const CARD_POOL = QUESTION_CATEGORIES.map((c,i) => ({
  ...ART_POOL.find(a=>a.id===artIds[i]),
  id:c.id,name:c.name,tag:'',serial:String(i+1).padStart(2,'0')+' / 06',rarity:'common',rarityMark:'',rarityLabel:'查看题目 ↗',trait:'六类练习 · 随机一题'
 }));
+
+// Preserve six distinct collectible identities; lighter art stages keep faces legible.
+Object.assign(CARD_POOL[0], {frameBg:'linear-gradient(150deg,#ffe6d7,#f5c6ae 55%,#dca18a)',windowBg:'repeating-radial-gradient(circle at 50% 45%,#ffffff13 0 10px,transparent 12px 23px),radial-gradient(circle at 50% 35%,#ffe0bd,#ee9476 62%,#c36d5b)'});
+Object.assign(CARD_POOL[1], {frameBg:'linear-gradient(150deg,#e0efde,#b2d3be 60%,#8cb5a0)',windowBg:'repeating-linear-gradient(130deg,#ffffff13 0 9px,transparent 9px 22px),radial-gradient(circle at 50% 35%,#5ed0a3,#21816b 70%,#165e52)'});
+Object.assign(CARD_POOL[2], {frameBg:'linear-gradient(150deg,#edfacb,#cae6a9 60%,#a0c681)',windowBg:'repeating-radial-gradient(ellipse at 50% 90%,#c8f6a31c 0 1px,transparent 2px 16px),radial-gradient(circle at 50% 32%,#b5eaa4,#61a969 66%,#387548)'});
+Object.assign(CARD_POOL[3], {frameBg:'linear-gradient(150deg,#6f5baf,#38275c 55%,#211839)',windowBg:'conic-gradient(from 30deg at 50% 45%,#9462d9,#34266f,#7d4fbc,#352264,#a06ad9,#4d3184,#9462d9)'});
+Object.assign(CARD_POOL[4], {frameBg:'linear-gradient(145deg,#415ba7,#243666 50%,#182746)',windowBg:ART_POOL.find(a=>a.id==='saturn').windowBg});
+Object.assign(CARD_POOL[5], {frameBg:'linear-gradient(130deg,#fff4c2,#e6bc4d 35%,#fff0ac 55%,#d6a439 80%,#f6df8c)',windowBg:'radial-gradient(circle at 50% 48%,#fff8ac80,transparent 60%),repeating-conic-gradient(from 0deg at 50% 48%,#f5b349 0deg 12deg,#ee9477 12deg 24deg,#f3cd61 24deg 36deg)'});
