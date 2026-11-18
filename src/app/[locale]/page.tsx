@@ -79,6 +79,15 @@ export default async function HomePage({ params }: HomePageProps) {
     <>
       <SiteHeader />
       <main className="flex-1">
+        {locale === 'zh-Hans' && (
+          <a
+            href="/structured-pack/index.html"
+            className="mx-auto mt-5 flex max-w-5xl items-center justify-between gap-4 rounded-2xl border border-blue-100 bg-blue-50 px-6 py-4 text-sm text-blue-900"
+          >
+            <span><strong>结构化题目卡包</strong> · 撕开一包，六大类别各练一道题</span>
+            <span aria-hidden="true">体验 →</span>
+          </a>
+        )}
         <section className="mx-auto max-w-5xl px-6 pt-16 pb-12 sm:pt-24">
           <div className="mx-auto max-w-3xl text-center">
             <p className="font-mono text-xs tracking-[0.25em] text-[var(--color-primary-dk)] uppercase">
